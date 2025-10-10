@@ -2,7 +2,7 @@
 
 <br/>
 
-[![Outiiil logo](./img/header.png)](http://outiiil.fr)
+**MISE A JOUR COMPATIBLE AVEC LES DERNIERES VERSIONS DE CHROME**
 
 <br/>
 
