@@ -702,6 +702,62 @@ center > div > #tabMembresAlliance {width:calc(100% - 20px);}
 	color: white;
 }
 
+/* Mini icônes utilisant le sprite de Fourmizzz.fr */
+.mini_icone_ressources {
+	display: inline-block;
+	width: 25px;
+	height: 30px;
+	background-image: url('http://s3.fourmizzz.fr/images/bouton/sprite_menu.png');
+	background-size: 235px 330px;
+	background-position: 0px -30px; /* Position de l'icône pomme/ressources (première icône, deuxième ligne) */
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
+.mini_icone_info {
+	display: inline-block;
+	width: 25px;
+	height: 30px;
+	background-image: url('http://s3.fourmizzz.fr/images/bouton/sprite_menu.png');
+	background-size: 235px 330px;
+	background-position: -50px -120px; /* Position de l'icône info (troisième icône, cinquième ligne) */
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
+.mini_icone_ponte {
+	display: inline-block;
+	width: 24px;
+	height: 26px;
+	background-image: url('http://s3.fourmizzz.fr/images/bouton/sprite_menu.png');
+	background-size: 235px 330px;
+	background-position: 0px -2px; /* Position de l'icône fourmilière */
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
+.mini_icone_construction {
+	display: inline-block;
+	width: 24px;
+	height: 26px;
+	background-image: url('http://s3.fourmizzz.fr/images/bouton/sprite_menu.png');
+	background-size: 235px 330px;
+	background-position: -75px -182px; /* Position de l'icône compte plus/construction */
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
+.mini_icone_recherche {
+	display: inline-block;
+	width: 24px;
+	height: 26px;
+	background-image: url('http://s3.fourmizzz.fr/images/bouton/sprite_menu.png');
+	background-size: 235px 330px;
+	background-position: -25px -242px; /* Position de l'icône alliance/recherche */
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
 /* Fichier css pour chrome */
 @media screen and (-webkit-min-device-pixel-ratio:0)
 {

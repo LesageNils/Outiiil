@@ -1106,13 +1106,13 @@ class PageFourmiliere {
                 dataEvo.ressources = this.donneesRessources;
             }
             if (this.donneesReine && Object.keys(this.donneesReine).length > 0) {
-                dataEvo.reine = this.donneesReine;
+                dataEvo.reineDetaillee = this.donneesReine;
             }
             if (this.donneesConstruction && this.donneesConstruction.liste?.length > 0) {
-                dataEvo.construction = this.donneesConstruction;
+                dataEvo.constructionDetaillee = this.donneesConstruction;
             }
             if (this.donneesRecherche && this.donneesRecherche.liste?.length > 0) {
-                dataEvo.recherche = this.donneesRecherche;
+                dataEvo.rechercheDetaillee = this.donneesRecherche;
             }
             dataEvo.timestampFourmiliere = new Date().toISOString();
 

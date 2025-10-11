@@ -274,7 +274,14 @@ class BoiteComptePlus
     */
     sauvegarder()
     {
-        localStorage.setItem("outiiil_evolution", JSON.stringify(this));
+        // Préserver les données existantes ajoutées par fourmiliere.js
+        let dataExistantes = JSON.parse(localStorage.getItem("outiiil_evolution")) || {};
+        let nouvellesDonnees = JSON.parse(JSON.stringify(this));
+        
+        // Fusionner les données (nouvelles données de ComptePlus + données existantes)
+        let dataFinale = {...dataExistantes, ...nouvellesDonnees};
+        
+        localStorage.setItem("outiiil_evolution", JSON.stringify(dataFinale));
         return this;
     }
     /**

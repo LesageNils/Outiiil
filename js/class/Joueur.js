@@ -400,7 +400,14 @@ class Joueur
     */
     sauvegarder()
     {
-        return localStorage.setItem("outiiil_joueur", JSON.stringify(this, ["id", "x", "y", "niveauConstruction", "niveauRecherche"]));
+        // Préserver les données existantes ajoutées par fourmiliere.js
+        let dataExistantes = JSON.parse(localStorage.getItem("outiiil_joueur")) || {};
+        let nouvellesDonnees = JSON.parse(JSON.stringify(this, ["id", "x", "y", "niveauConstruction", "niveauRecherche"]));
+        
+        // Fusionner les données (nouvelles données de Joueur + données existantes)
+        let dataFinale = {...dataExistantes, ...nouvellesDonnees};
+        
+        return localStorage.setItem("outiiil_joueur", JSON.stringify(dataFinale));
     }
     /**
     *
