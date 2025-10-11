@@ -2,9 +2,18 @@
 
 <br/>
 
-[![Outiiil logo](./img/header.png)](http://outiiil.fr)
+**MISE A JOUR COMPATIBLE AVEC LES DERNIERES VERSIONS DE CHROME**
+
+L'objectif premier de ce fork est de rendre de nouveau compatible cette extension avec la dernière version de chrome.
+Ce fork a également pour but d'améliorer l'extension en ajoutant des fonctionnalités supplémentaires.
+
+La première fonctionnalité qui sera implémentée sera une page de synthèse regroupant toutes les infos de la fourmilière.
+Cette page de synthèse sera accessible en remplacement de l'actuel menu "Aide".
 
 <br/>
+
+_________________________________________________________________________
+Notes de l'auteur( Hraesvelg)
 
 ## Outiiil ##
 
