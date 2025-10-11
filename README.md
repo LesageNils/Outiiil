@@ -7,8 +7,11 @@
 L'objectif premier de ce fork est de rendre de nouveau compatible cette extension avec la dernière version de chrome.
 Ce fork a également pour but d'améliorer l'extension en ajoutant des fonctionnalités supplémentaires.
 
-La première fonctionnalité qui sera implémentée sera une page de synthèse regroupant toutes les infos de la fourmilière.
-Cette page de synthèse sera accessible en remplacement de l'actuel menu "Aide".
+- stockage de nombreuses infos dans le navigateur (stockage local)
+- Une page de synthèse regroupant toutes les infos de la fourmilière. <br />
+Cette page de synthèse est accessible en remplacement de l'actuel menu "Aide".
+
+- Ajout d'une liste des membres de l'alliance disponible dans la boite compte plus (toujours visible)
 
 <br/>
 
