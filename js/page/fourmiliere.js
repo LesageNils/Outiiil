@@ -15,6 +15,7 @@ class PageFourmiliere {
         $("center").empty();
         $("center").append("<h1>Synthèse de la fourmiliere</h1>");
 
+
         this.afficherIndicateurChargement();
 
         $.when(
@@ -24,9 +25,18 @@ class PageFourmiliere {
             this.chargerDonneesRecherche(),
             this.chargerDonneesJoueur()
         ).then(() => {
+            // Sauvegarde automatique des données récupérées
+            this.sauvegarderToutesDonnees();
             this.afficherInfosJoueur();
+            console.log("donneesRessources", this.donneesRessources);
+            console.log("donneesReine", this.donneesReine);
+            console.log("donneesConstruction", this.donneesConstruction);
+            console.log("donneesRecherche", this.donneesRecherche);
+            console.log("donneesJoueur", this.donneesJoueur);
         }).catch((error) => {
             console.warn("Impossible de charger certaines données:", error);
+            // Sauvegarde même en cas d'erreur partielle
+            this.sauvegarderToutesDonnees();
             this.afficherInfosJoueur();
         });
 
@@ -68,7 +78,7 @@ class PageFourmiliere {
      */
     afficherIndicateurChargement() {
         const couleurs = this.getCouleursTheme();
-        
+
         const html = `
         <div id="indicateur-chargement" style="
             background: ${couleurs.fond};
@@ -140,13 +150,13 @@ class PageFourmiliere {
                         <tr><td style="padding: 4px; font-weight: bold;">Pseudo:</td><td style="padding: 4px;">${monProfil.pseudo}</td></tr>
                         <tr><td style="padding: 4px; font-weight: bold;">ID:</td><td style="padding: 4px;">${monProfil.id}</td></tr>
                         <tr><td style="padding: 4px; font-weight: bold;">Position:</td><td style="padding: 4px;">(${monProfil.x}, ${monProfil.y})</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Alliance:</td><td style="padding: 4px;">${this.donneesJoueur?.Alliance || Utils.alliance || 'Aucune'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">État:</td><td style="padding: 4px;">${this.donneesJoueur?.Etat || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Colonies:</td><td style="padding: 4px;">${this.donneesJoueur?.['Nombre de Colonie'] || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Terrain:</td><td style="padding: 4px;">${this.donneesJoueur?.Terrain || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Fourmilière:</td><td style="padding: 4px;">${this.donneesJoueur?.Fourmilière || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Technologie:</td><td style="padding: 4px;">${this.donneesJoueur?.Technologie || 'N/A'}</td></tr>
-                        <tr><td style="padding: 4px; font-weight: bold;">Combat:</td><td style="padding: 4px;">${this.donneesJoueur?.Combat || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Alliance:</td><td style="padding: 4px;">${this.donneesJoueur?.alliance || Utils.alliance || 'Aucune'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">État:</td><td style="padding: 4px;">${this.donneesJoueur?.etat || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Colonies:</td><td style="padding: 4px;">${this.donneesJoueur?.colonies || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Terrain:</td><td style="padding: 4px;">${this.donneesJoueur?.terrain || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Fourmilière:</td><td style="padding: 4px;">${this.donneesJoueur?.fourmilière || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Technologie:</td><td style="padding: 4px;">${this.donneesJoueur?.technologie || 'N/A'}</td></tr>
+                        <tr><td style="padding: 4px; font-weight: bold;">Combat:</td><td style="padding: 4px;">${this.donneesJoueur?.combat || 'N/A'}</td></tr>
                         <tr><td style="padding: 4px; font-weight: bold;">Serveur:</td><td style="padding: 4px;">${Utils.serveur}</td></tr>
                         <tr><td style="padding: 4px; font-weight: bold;">Compte Plus:</td><td style="padding: 4px;"> ${Utils.comptePlus ? '✅ Actif' : '❌ Inactif'}</td></tr>
                     </table>
@@ -282,7 +292,7 @@ class PageFourmiliere {
      */
     getDonneesReelles() {
         const donneesReelles = [];
-        
+
         if (this.donneesRessources?.productionChampignonniere > 0) donneesReelles.push("Champignonnière");
         if (this.donneesRessources?.productionRecolteNourriture > 0 || this.donneesRessources?.productionRecolteMateriaux > 0) donneesReelles.push("Production terrain");
         if (this.donneesRessources?.consommationTroupes > 0) donneesReelles.push("Consommation troupes");
@@ -373,13 +383,13 @@ class PageFourmiliere {
 
         return defer.promise();
     }
-    
+
     /**
      * Charge les données de construction depuis construction.php
      */
     chargerDonneesConstruction() {
         const defer = $.Deferred();
-        
+
         $.ajax({
             url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`,
             type: 'GET',
@@ -387,20 +397,20 @@ class PageFourmiliere {
             success: (page) => {
                 try {
                     this.donneesConstruction = {};
-                    
+
                     const encoursC = $(page).find("nav#menu").nextAll("strong").text();
                     this.donneesConstruction.encours = this.parserDateFin(encoursC, ' se termine dans : ');
-                    
+
                     const listeC = [];
                     $(page).find(".desciption_amelioration").each((e, i) => {
                         const titreC = $(i).find("H2").text();
                         const niveauC = parseInt($(i).find(".niveau_amelioration").text().split(" ")[1]);
                         const infosC = $(i).find(".pas_sur_telephone").find('br').get(0).nextSibling.nodeValue;
-                        
+
                         listeC[e] = { titre: titreC, niveau: niveauC, infos: infosC };
                     });
                     this.donneesConstruction.liste = listeC;
-                    
+
                     defer.resolve(this.donneesConstruction);
                 } catch (error) {
                     defer.reject(error);
@@ -411,16 +421,16 @@ class PageFourmiliere {
                 defer.resolve(this.donneesConstruction);
             }
         });
-        
+
         return defer.promise();
     }
-    
+
     /**
      * Charge les données de recherche depuis laboratoire.php
      */
     chargerDonneesRecherche() {
         const defer = $.Deferred();
-        
+
         $.ajax({
             url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`,
             type: 'GET',
@@ -428,20 +438,20 @@ class PageFourmiliere {
             success: (page) => {
                 try {
                     this.donneesRecherche = {};
-                    
+
                     const encoursL = $(page).find("nav#menu").nextAll("strong").text();
                     this.donneesRecherche.encours = this.parserDateFin(encoursL, ' terminé dans: ');
-                    
+
                     const listeL = [];
                     $(page).find(".desciption_amelioration").each((e, i) => {
                         const titreL = $(i).find("H2").text();
                         const niveauL = parseInt($(i).find(".niveau_amelioration").text().split(" ")[1]);
                         const infosL = $(i).find(".pas_sur_telephone").find('br').get(0).nextSibling.nodeValue;
-                        
+
                         listeL[e] = { titre: titreL, niveau: niveauL, infos: infosL };
                     });
                     this.donneesRecherche.liste = listeL;
-                    
+
                     defer.resolve(this.donneesRecherche);
                 } catch (error) {
                     defer.reject(error);
@@ -452,7 +462,7 @@ class PageFourmiliere {
                 defer.resolve(this.donneesRecherche);
             }
         });
-        
+
         return defer.promise();
     }
 
@@ -466,7 +476,7 @@ class PageFourmiliere {
 
         const titre = texte.split(separateur)[0].replace("- ", "");
         const tab_reste = texte.split(separateur)[1]?.split('reste')[0]?.split(' ') || [];
-        
+
         let jour = "", heure = "", minute = "", seconde = "";
         tab_reste.forEach((item) => {
             if (item.includes("J")) jour = item.split('J')[0];
@@ -474,13 +484,13 @@ class PageFourmiliere {
             if (item.includes("m")) minute = item.split('m')[0];
             if (item.includes("s")) seconde = item.split('s')[0];
         });
-        
+
         const date_fin = new Date();
         if (jour) date_fin.setDate(date_fin.getDate() + parseInt(jour));
         if (heure) date_fin.setHours(date_fin.getHours() + parseInt(heure));
         if (minute) date_fin.setMinutes(date_fin.getMinutes() + parseInt(minute));
         if (seconde) date_fin.setSeconds(date_fin.getSeconds() + parseInt(seconde));
-        
+
         return {
             encours: titre,
             fin_encours: date_fin.toLocaleString('fr-FR', {
@@ -499,7 +509,7 @@ class PageFourmiliere {
     chargerDonneesJoueur() {
         const defer = $.Deferred();
         const tab_cles = ['Alliance', 'Etat', 'Nombre de Colonie', 'Localisation', 'Terrain', 'Fourmilière', 'Technologie', 'Combat'];
-        
+
         $.ajax({
             url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${monProfil.pseudo}`,
             type: 'GET',
@@ -507,21 +517,30 @@ class PageFourmiliere {
             success: (response) => {
                 try {
                     const tab_joueur = {};
-                    $(response).find(".boite_membre table tr").each(function(i, ligne) {
+                    $(response).find(".boite_membre table tr").each(function (i, ligne) {
                         const cle = $(ligne).find("td").eq(0).text().replace(":", "").trim();
                         const valeur = $(ligne).find("td").eq(1).text();
-                        
+
                         if (tab_cles.includes(cle)) {
-                            if (cle === "Localisation") {
-                                const x = valeur.split(" et ")[0].split("=")[1];
-                                const y = valeur.split(" et ")[1].split("=")[1];
-                                tab_joueur['Localisation(x-y)'] = x + "-" + y;
-                            } else {
-                                tab_joueur[cle] = valeur;
+                            switch (cle) {
+                                case "Localisation":
+                                    const x = valeur.split(" et ")[0].split("=")[1];
+                                    const y = valeur.split(" et ")[1].split("=")[1];
+                                    tab_joueur['x'] = x;
+                                    tab_joueur['y'] = y;
+                                    break;
+                                case "Nombre de Colonie":
+                                    tab_joueur['colonies'] = valeur;
+                                    break;
+
+                                default:
+                                    tab_joueur[cle.toLowerCase()] = valeur;
+                                    break;
                             }
+
                         }
                     });
-                    
+
                     this.donneesJoueur = tab_joueur;
                     defer.resolve(this.donneesJoueur);
                 } catch (error) {
@@ -536,10 +555,10 @@ class PageFourmiliere {
                 defer.resolve(this.donneesJoueur);
             }
         });
-        
+
         return defer.promise();
     }
-    
+
     /**
      * Analyse la production locale depuis la page fourmiliere.php
      */
@@ -683,7 +702,7 @@ class PageFourmiliere {
      */
     genererListeActivites(donnees, tableauFallback, niveauxFallback) {
         let html = `<table style="width: 100%; border-collapse: collapse; font-size: 12px;"><tbody>`;
-        
+
         if (donnees?.liste?.length > 0) {
             $.each(donnees.liste, (index, ligne) => {
                 if (ligne.titre && ligne.titre.trim() !== '') {
@@ -691,10 +710,10 @@ class PageFourmiliere {
                     const jaugeNiveau = this.genererJaugeNiveau(ligne.niveau);
                     const couleurTexte = enCours ? 'red' : (ligne.niveau > 0 ? 'black' : 'grey');
                     const poidsPolice = enCours ? 'bold' : (ligne.niveau > 0 ? 'bold' : 'normal');
-                    const infos = enCours ? 
-                        `---> Niveau ${ligne.niveau + 1} terminé le ${donnees.encours.fin_encours}` : 
+                    const infos = enCours ?
+                        `---> Niveau ${ligne.niveau + 1} terminé le ${donnees.encours.fin_encours}` :
                         ligne.infos || `Niveau actuel: ${ligne.niveau}`;
-                    
+
                     html += `
                     <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
                         <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
@@ -718,7 +737,7 @@ class PageFourmiliere {
                 const jaugeNiveau = this.genererJaugeNiveau(niveau);
                 const couleurTexte = niveau > 0 ? 'black' : 'grey';
                 const poidsPolice = niveau > 0 ? 'bold' : 'normal';
-                
+
                 html += `
                 <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
                     <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
@@ -733,7 +752,7 @@ class PageFourmiliere {
                 </tr>`;
             }
         }
-        
+
         html += `</tbody></table>`;
         return html;
     }
@@ -841,7 +860,7 @@ class PageFourmiliere {
      */
     genererJaugeNiveau(niveau) {
         const pourcentage = Math.min((niveau / 100) * 100, 100);
-        
+
         return `
         <div style="width: 95%; height: 15px; border: solid black 1px; display: block; background: #676b51; text-align: left;">
             <div style="background: #ad572f; position: relative; left: 0px; top: 0px; height: 100%; border-right: solid black 1px; text-align: center; color: white; width: ${pourcentage}%; font-size: 10px; line-height: 15px;">
@@ -1067,5 +1086,85 @@ class PageFourmiliere {
             total += monProfil.niveauConstruction[i] || 0;
         }
         return total;
+    }
+
+    // ========================================
+    // MÉTHODES DE SAUVEGARDE
+    // ========================================
+
+
+    /**
+     * Met à jour les données d'évolution avec les nouvelles données de la fourmilière
+     * Ajoute les nouvelles données sans modifier les formats d'origine
+     */
+    mettreAJourDonneesEvolution() {
+        try {
+            let dataEvo = JSON.parse(localStorage.getItem("outiiil_evolution")) || {};
+
+            // Ajout des nouvelles données (sans modifier l'existant)
+            if (this.donneesRessources && Object.keys(this.donneesRessources).length > 0) {
+                dataEvo.ressources = this.donneesRessources;
+            }
+            if (this.donneesReine && Object.keys(this.donneesReine).length > 0) {
+                dataEvo.reine = this.donneesReine;
+            }
+            if (this.donneesConstruction && this.donneesConstruction.liste?.length > 0) {
+                dataEvo.construction = this.donneesConstruction;
+            }
+            if (this.donneesRecherche && this.donneesRecherche.liste?.length > 0) {
+                dataEvo.recherche = this.donneesRecherche;
+            }
+            dataEvo.timestampFourmiliere = new Date().toISOString();
+
+            localStorage.setItem("outiiil_evolution", JSON.stringify(dataEvo));
+            return this;
+        } catch (error) {
+            console.warn("Erreur lors de la mise à jour des données d'évolution:", error);
+            return this;
+        }
+    }
+
+    /**
+     * Met à jour les données du joueur avec les informations détaillées
+     */
+    mettreAJourDonneesJoueur() {
+        try {
+            let dataJoueur = JSON.parse(localStorage.getItem("outiiil_joueur")) || {};
+
+            // Mise à jour et ajout des données si disponibles
+            if (this.donneesJoueur && Object.keys(this.donneesJoueur).length > 0) {
+                // Mise à jour des données existantes
+
+                // Mettre à jour niveauConstruction avec les données de construction
+                dataJoueur.niveauConstruction = this.donneesConstruction?.liste?.map(item => item.niveau) || dataJoueur.niveauConstruction;
+                
+                // Mettre à jour niveauRecherche avec les données de recherche
+                dataJoueur.niveauRecherche = this.donneesRecherche?.liste?.map(item => item.niveau) || dataJoueur.niveauRecherche;
+
+                // Ajouter les nouvelles propriétés
+                for (let cle in this.donneesJoueur) {
+                    if (cle !== "Fourmilière" && cle !== "Technologie") {  // Éviter les doublons
+                        dataJoueur[cle] = this.donneesJoueur[cle];  // AJOUT
+                    }
+                }
+                dataJoueur.timestampDetaillees = new Date().toISOString();  // AJOUT
+            }
+
+
+            localStorage.setItem("outiiil_joueur", JSON.stringify(dataJoueur));
+            return this;
+        } catch (error) {
+            console.warn("Erreur lors de la mise à jour des données du joueur:", error);
+            return this;
+        }
+    }
+
+    /**
+     * Sauvegarde toutes les données récupérées par la page fourmilière
+     */
+    sauvegarderToutesDonnees() {
+        this.mettreAJourDonneesEvolution();
+        this.mettreAJourDonneesJoueur();
+        return this;
     }
 }
