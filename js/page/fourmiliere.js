@@ -2,6 +2,9 @@ class PageFourmiliere {
     constructor() {
         this.donneesRessources = null;
         this.donneesReine = null;
+        this.donneesConstruction = null;
+        this.donneesRecherche = null;
+        this.donneesJoueur = null;
     }
 
     // ========================================
@@ -15,10 +18,13 @@ class PageFourmiliere {
         // Afficher un indicateur de chargement
         this.afficherIndicateurChargement();
 
-        // Charger les données de ressources et de la reine en parallèle
+        // Charger toutes les données en parallèle
         $.when(
             this.chargerDonneesRessources(),
-            this.chargerDonneesReine()
+            this.chargerDonneesReine(),
+            this.chargerDonneesConstruction(),
+            this.chargerDonneesRecherche(),
+            this.chargerDonneesJoueur()
         ).then(() => {
             // Création du bloc d'informations du joueur avec les données réelles
             this.afficherInfosJoueur();
@@ -93,7 +99,7 @@ class PageFourmiliere {
         let couleurFond = monProfil.parametre["couleur1"] ? monProfil.parametre["couleur1"].valeur : "#f8f9fa";
         let couleurBordure = monProfil.parametre["couleur3"] ? monProfil.parametre["couleur3"].valeur : "#dee2e6";
         let couleurAlternance = monProfil.parametre["couleur2"] ? monProfil.parametre["couleur2"].valeur : "#e9ecef";
-        let couleurTitre = monProfil.parametre["couleurTitre"] ? monProfil.parametre["couleurTitre"].valeur : "#495057";
+        let couleurTitre = "#bd8d46";
 
         let html = `
         <div id="bloc-infos-joueur" style="
@@ -108,25 +114,36 @@ class PageFourmiliere {
             color: ${couleurTexte};
         ">
             
-             <!-- Première ligne : Informations générales + Armée -->
+             <!-- Première ligne : Informations générales + Reine -->
              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                  <!-- Informations générales -->
                  <div class="section-info" style="
                      background: ${couleurAlternance};
                      padding: 12px;
                      border-radius: 6px;
-                     border-left: 4px solid #4CAF50;
                  ">
-                     <h3 style="margin-top: 0; font-size: 14px;">👤 Informations Générales</h3>
+                     <h3 class="o_titre_cadre" style="background:${couleurTitre};">
+                         <div class='mini_icone_info'/> Informations Générales
+                         <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/fourmiliere.php', '_blank')" 
+                                 style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                                 onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                                 onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">
+                             Ouvrir
+                         </button>
+                     </h3>
                      <table style="width: 100%; border-collapse: collapse;">
                          <tr><td style="padding: 4px; font-weight: bold;">Pseudo:</td><td style="padding: 4px;">${monProfil.pseudo}</td></tr>
                          <tr><td style="padding: 4px; font-weight: bold;">ID:</td><td style="padding: 4px;">${monProfil.id}</td></tr>
                          <tr><td style="padding: 4px; font-weight: bold;">Position:</td><td style="padding: 4px;">(${monProfil.x}, ${monProfil.y})</td></tr>
-                         <tr><td style="padding: 4px; font-weight: bold;">Alliance:</td><td style="padding: 4px;">${Utils.alliance || 'Aucune'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Alliance:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Alliance'] ? this.donneesJoueur['Alliance'] : (Utils.alliance || 'Aucune')}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">État:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Etat'] ? this.donneesJoueur['Etat'] : 'N/A'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Colonies:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Nombre de Colonie'] ? this.donneesJoueur['Nombre de Colonie'] : 'N/A'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Terrain:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Terrain'] ? this.donneesJoueur['Terrain'] : 'N/A'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Fourmilière:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Fourmilière'] ? this.donneesJoueur['Fourmilière'] : 'N/A'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Technologie:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Technologie'] ? this.donneesJoueur['Technologie'] : 'N/A'}</td></tr>
+                         <tr><td style="padding: 4px; font-weight: bold;">Combat:</td><td style="padding: 4px;">${this.donneesJoueur && this.donneesJoueur['Combat'] ? this.donneesJoueur['Combat'] : 'N/A'}</td></tr>
                          <tr><td style="padding: 4px; font-weight: bold;">Serveur:</td><td style="padding: 4px;">${Utils.serveur}</td></tr>
                          <tr><td style="padding: 4px; font-weight: bold;">Compte Plus:</td><td style="padding: 4px;"> ${Utils.comptePlus ? '✅ Actif' : '❌ Inactif'}</td></tr>
-                         <tr><td style="padding: 4px; font-weight: bold;">Niveau de construction:</td><td style="padding: 4px;"> ${this.calculerNiveauConstruction()}</td></tr>
-                         <tr><td style="padding: 4px; font-weight: bold;">Niveau technologique:</td><td style="padding: 4px;"> ${this.calculerNiveauTechnologique()}</td></tr>
                      </table>
                  </div>
                  
@@ -135,9 +152,16 @@ class PageFourmiliere {
                      background: ${couleurAlternance};
                      padding: 12px;
                      border-radius: 6px;
-                     border-left: 4px solid #9C27B0;
                  ">
-                     <h3 style="margin-top: 0; font-size: 14px;">👑 Reine</h3>
+                     <h3 class="o_titre_cadre" style="background:${couleurTitre};">
+                         <div class='mini_icone_ponte'/> Reine
+                         <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php', '_blank')" 
+                                 style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                                 onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                                 onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">
+                             Ouvrir
+                         </button>
+                     </h3>
                      ${this.genererBlocReine()}
                  </div>
              </div>
@@ -148,9 +172,16 @@ class PageFourmiliere {
                      background: ${couleurAlternance};
                      padding: 12px;
                      border-radius: 6px;
-                     border-left: 4px solid #FF9800;
                  ">
-                     <h3 style="margin-top: 0; font-size: 14px;">💰 Ressources</h3>
+                     <h3 class="o_titre_cadre" style="background:${couleurTitre};">
+                         <div class='mini_icone_ressources'/> Ressources
+                         <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php', '_blank')" 
+                                 style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                                 onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                                 onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">
+                             Ouvrir
+                         </button>
+                     </h3>
                         <!-- Tableau de ressources complet avec jauges -->
                         <div style="margin-bottom: 20px;">
                             ${this.genererTableauRessourcesComplet()}
@@ -167,10 +198,20 @@ class PageFourmiliere {
                      background: ${couleurAlternance};
                      padding: 12px;
                      border-radius: 6px;
-                     border-left: 4px solid #2196F3;
                  ">
-                     <h3 style="margin-top: 0; font-size: 14px;">🏗️ Constructions</h3>
-                     <div style="max-height: 300px; overflow-y: auto;">
+                     <h3 class="o_titre_cadre" style="background:${couleurTitre};">
+                         <div class='mini_icone_construction'/> Constructions 
+                       <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php', '_blank')" 
+                               style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                               onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                               onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">
+                           Ouvrir
+                       </button>
+                     </h3>
+                     <div style="text-align: center; margin: 8px 0; font-size: 12px; font-weight: bold; color: ${couleurTexte};">
+                         Niveau global: ${this.calculerNiveauConstruction()}
+                     </div>
+                     <div>
                          ${this.genererListeConstructions()}
                      </div>
                  </div>
@@ -180,10 +221,20 @@ class PageFourmiliere {
                      background: ${couleurAlternance};
                      padding: 12px;
                      border-radius: 6px;
-                     border-left: 4px solid #9C27B0;
                  ">
-                     <h3 style="margin-top: 0; font-size: 14px;">🔬 Recherches</h3>
-                     <div style="max-height: 200px; overflow-y: auto;">
+                     <h3 class="o_titre_cadre" style="background:${couleurTitre};">
+                         <div class='mini_icone_recherche'/> Laboratoire
+                       <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php', '_blank')" 
+                               style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                               onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                               onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">
+                           Ouvrir
+                       </button>
+                     </h3>
+                     <div style="text-align: center; margin: 8px 0; font-size: 12px; font-weight: bold; color: ${couleurTexte};">
+                         Niveau global: ${this.calculerNiveauTechnologique()}
+                     </div>
+                     <div>
                          ${this.genererListeRecherches()}
                      </div>
                  </div>
@@ -213,6 +264,9 @@ class PageFourmiliere {
             if (this.donneesRessources.totalProductionNourriture > 0 || this.donneesRessources.totalProductionMateriaux > 0) donneesReelles.push("Totaux production");
             if (this.donneesRessources.ouvrieresNourriture > 0 || this.donneesRessources.ouvrieresMateriaux > 0) donneesReelles.push("Ouvrières affectées");
             if (this.donneesReine && Object.keys(this.donneesReine).length > 0) donneesReelles.push("Ponte de la reine");
+            if (this.donneesConstruction && this.donneesConstruction.liste && this.donneesConstruction.liste.length > 0) donneesReelles.push("Constructions");
+            if (this.donneesRecherche && this.donneesRecherche.liste && this.donneesRecherche.liste.length > 0) donneesReelles.push("Recherches");
+            if (this.donneesJoueur && Object.keys(this.donneesJoueur).length > 0) donneesReelles.push("Informations détaillées du joueur");
 
             if (donneesReelles.length === 0) donneesEstimees.push("Toutes les données");
 
@@ -337,7 +391,248 @@ class PageFourmiliere {
 
         return defer.promise();
     }
+    
+    /**
+     * Charge les données de construction depuis construction.php
+     */
+    chargerDonneesConstruction() {
+        let defer = $.Deferred();
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`,
+            type: 'GET',
+            dataType: 'html',
+            success: (page) => {
+                try {
+                    this.donneesConstruction = {};
+                    
+                    // Récupérer les informations de construction en cours
+                    let encoursC = $(page).find("nav#menu").nextAll("strong").text();
+                    if (encoursC) {
+                        let titreC = encoursC.split(' se termine dans : ')[0].replace("- ", "");
+                        let tab_resteC = encoursC.split(' se termine dans : ')[1].split('reste')[0].split(' ');
+                        
+                        let jour = "", heure = "", minute = "", seconde = "";
+                        tab_resteC.forEach((item) => {
+                            if (item.includes("J")) {
+                                jour = item.split('J')[0];
+                            }
+                            if (item.includes("H")) {
+                                heure = item.split('H')[0];
+                            }
+                            if (item.includes("m")) {
+                                minute = item.split('m')[0];
+                            }
+                            if (item.includes("s")) {
+                                seconde = item.split('s')[0];
+                            }
+                        });
+                        
+                        let date_finC = new Date();
+                        if (jour) {
+                            date_finC.setDate(date_finC.getDate() + parseInt(jour));
+                        }
+                        if (heure) {
+                            date_finC.setHours(date_finC.getHours() + parseInt(heure));
+                        }
+                        if (minute) {
+                            date_finC.setMinutes(date_finC.getMinutes() + parseInt(minute));
+                        }
+                        if (seconde) {
+                            date_finC.setSeconds(date_finC.getSeconds() + parseInt(seconde));
+                        }
+                        
+                        this.donneesConstruction.encours = {
+                            'encours': titreC,
+                            'fin_encours': date_finC.toLocaleString('fr-FR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })
+                        };
+                    } else {
+                        this.donneesConstruction.encours = {
+                            'encours': '',
+                            'fin_encours': ''
+                        };
+                    }
+                    
+                    // Récupérer la liste des constructions
+                    let listeC = [];
+                    $(page).find(".desciption_amelioration").each((e, i) => {
+                        let titreC = $(i).find("H2").text();
+                        let niveauC = parseInt($(i).find(".niveau_amelioration").text().split(" ")[1]);
+                        let infosC = $(i).find(".pas_sur_telephone").find('br').get(0).nextSibling.nodeValue;
+                        
+                        listeC[e] = {
+                            'titre': titreC,
+                            'niveau': niveauC,
+                            'infos': infosC
+                        };
+                    });
+                    this.donneesConstruction.liste = listeC;
+                    
+                    defer.resolve(this.donneesConstruction);
+                } catch (error) {
+                    defer.reject(error);
+                }
+            },
+            error: (xhr, status, error) => {
+                // En cas d'erreur, on initialise avec un objet vide
+                this.donneesConstruction = { encours: { encours: '', fin_encours: '' }, liste: [] };
+                defer.resolve(this.donneesConstruction);
+            }
+        });
+        
+        return defer.promise();
+    }
+    
+    /**
+     * Charge les données de recherche depuis laboratoire.php
+     */
+    chargerDonneesRecherche() {
+        let defer = $.Deferred();
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`,
+            type: 'GET',
+            dataType: 'html',
+            success: (page) => {
+                try {
+                    this.donneesRecherche = {};
+                    
+                    // Récupérer les informations de recherche en cours
+                    let encoursL = $(page).find("nav#menu").nextAll("strong").text();
+                    if (encoursL) {
+                        let titreL = encoursL.split(' terminé dans: ')[0].replace("- ", "");
+                        let tab_resteL = encoursL.split(' terminé dans: ')[1].split('reste')[0].split(' ');
+                        
+                        let jour = "", heure = "", minute = "", seconde = "";
+                        tab_resteL.forEach((item) => {
+                            if (item.includes("J")) {
+                                jour = item.split('J')[0];
+                            }
+                            if (item.includes("H")) {
+                                heure = item.split('H')[0];
+                            }
+                            if (item.includes("m")) {
+                                minute = item.split('m')[0];
+                            }
+                            if (item.includes("s")) {
+                                seconde = item.split('s')[0];
+                            }
+                        });
+                        
+                        let date_finL = new Date();
+                        if (jour) {
+                            date_finL.setDate(date_finL.getDate() + parseInt(jour));
+                        }
+                        if (heure) {
+                            date_finL.setHours(date_finL.getHours() + parseInt(heure));
+                        }
+                        if (minute) {
+                            date_finL.setMinutes(date_finL.getMinutes() + parseInt(minute));
+                        }
+                        if (seconde) {
+                            date_finL.setSeconds(date_finL.getSeconds() + parseInt(seconde));
+                        }
+                        
+                        this.donneesRecherche.encours = {
+                            'encours': titreL,
+                            'fin_encours': date_finL.toLocaleString('fr-FR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })
+                        };
+                    } else {
+                        this.donneesRecherche.encours = {
+                            'encours': '',
+                            'fin_encours': ''
+                        };
+                    }
+                    
+                    // Récupérer la liste des recherches
+                    let listeL = [];
+                    $(page).find(".desciption_amelioration").each((e, i) => {
+                        let titreL = $(i).find("H2").text();
+                        let niveauL = parseInt($(i).find(".niveau_amelioration").text().split(" ")[1]);
+                        let infosL = $(i).find(".pas_sur_telephone").find('br').get(0).nextSibling.nodeValue;
+                        
+                        listeL[e] = {
+                            'titre': titreL,
+                            'niveau': niveauL,
+                            'infos': infosL
+                        };
+                    });
+                    this.donneesRecherche.liste = listeL;
+                    
+                    defer.resolve(this.donneesRecherche);
+                } catch (error) {
+                    defer.reject(error);
+                }
+            },
+            error: (xhr, status, error) => {
+                // En cas d'erreur, on initialise avec un objet vide
+                this.donneesRecherche = { encours: { encours: '', fin_encours: '' }, liste: [] };
+                defer.resolve(this.donneesRecherche);
+            }
+        });
+        
+        return defer.promise();
+    }
 
+    /**
+     * Charge les données détaillées du joueur depuis Membre.php
+     */
+    chargerDonneesJoueur() {
+        let defer = $.Deferred();
+        let tab_cles = ['Alliance', 'Etat', 'Nombre de Colonie', 'Localisation', 'Terrain', 'Fourmilière', 'Technologie', 'Combat'];
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${monProfil.pseudo}`,
+            type: 'GET',
+            dataType: 'html',
+            success: (response) => {
+                try {
+                    let tab_joueur = {};
+                    $(response).find(".boite_membre table tr").each(function(i, ligne) {
+                        let cle = $(ligne).find("td").eq(0).text().replace(":", "").trim();
+                        let valeur = $(ligne).find("td").eq(1).text();
+                        
+                        if (tab_cles.includes(cle)) {
+                            if (cle == "Localisation") {
+                                let x = valeur.split(" et ")[0].split("=")[1];
+                                let y = valeur.split(" et ")[1].split("=")[1];
+                                tab_joueur['Localisation(x-y)'] = x + "-" + y;
+                            } else {
+                                tab_joueur[cle] = valeur;
+                            }
+                        }
+                    });
+                    
+                    this.donneesJoueur = tab_joueur;
+                    defer.resolve(this.donneesJoueur);
+                } catch (error) {
+                    console.warn("Erreur lors du parsing des données du joueur:", error);
+                    this.donneesJoueur = {};
+                    defer.resolve(this.donneesJoueur);
+                }
+            },
+            error: (xhr, status, error) => {
+                console.warn("Impossible de charger les données du joueur");
+                this.donneesJoueur = {};
+                defer.resolve(this.donneesJoueur);
+            }
+        });
+        
+        return defer.promise();
+    }
+    
     /**
      * Analyse la production locale depuis la page fourmiliere.php
      */
@@ -492,16 +787,76 @@ class PageFourmiliere {
      * Génère la liste des constructions avec leurs niveaux
      */
     genererListeConstructions() {
-        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">';
-        for (let i = 0; i < CONSTRUCTION.length; i++) {
-            let niveau = monProfil.niveauConstruction[i] || 0;
-            let couleur = niveau > 0 ? '#111' : '#ccc';
-            html += `<tr>
-                <td style="padding: 2px; color: ${couleur};">${CONSTRUCTION[i]}:</td>
-                <td style="padding: 2px; text-align: right; font-weight: bold; color: ${couleur};">Niveau ${niveau}</td>
-            </tr>`;
+        let html = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <tbody>`;
+        
+        // Utiliser les données récupérées via AJAX si disponibles
+        if (this.donneesConstruction && this.donneesConstruction.liste && this.donneesConstruction.liste.length > 0) {
+            $.each(this.donneesConstruction.liste, (index, ligne) => {
+                if (ligne.titre && ligne.titre.trim() !== '') {
+                    // Vérifier si cette construction est en cours
+                    let enCours = this.donneesConstruction.encours && 
+                                 this.donneesConstruction.encours.encours && 
+                                 ligne.titre.includes(this.donneesConstruction.encours.encours);
+                    
+                    // Générer la jauge de niveau
+                    let jaugeNiveau = this.genererJaugeNiveau(ligne.niveau);
+                    
+                    // Couleur et style selon l'état
+                    let couleurTexte = enCours ? 'red' : (ligne.niveau > 0 ? 'black' : 'grey');
+                    let poidsPolice = enCours ? 'bold' : (ligne.niveau > 0 ? 'bold' : 'normal');
+                    let infos = enCours ? 
+                        `---> Niveau ${ligne.niveau + 1} terminé le ${this.donneesConstruction.encours.fin_encours}` : 
+                        ligne.infos || `Niveau actuel: ${ligne.niveau}`;
+                    
+                    html += `
+                    <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
+                        <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                                <div style="flex: 1; font-weight: bold;">${ligne.titre}</div>
+                                <div style="width: 100px;">${jaugeNiveau}</div>
+                            </div>
+                            <div style="font-size: ${enCours ? '12px' : '10px'}; font-weight: ${enCours ? 'bold' : 'normal'}; color: ${enCours ? 'red' : 'grey'}; padding-left: 4px;">
+                                ${infos}
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            });
+        } else {
+            // Fallback: utiliser les données locales si AJAX a échoué
+            for (let i = 0; i < CONSTRUCTION.length; i++) {
+                let niveau = monProfil.niveauConstruction[i] || 0;
+                let titre = CONSTRUCTION[i];
+                let infos = `Niveau actuel: ${niveau}`;
+                
+                // Générer la jauge de niveau
+                let jaugeNiveau = this.genererJaugeNiveau(niveau);
+                
+                // Couleur du texte selon le niveau
+                let couleurTexte = niveau > 0 ? 'black' : 'grey';
+                let poidsPolice = niveau > 0 ? 'bold' : 'normal';
+                
+                html += `
+                <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
+                    <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                            <div style="flex: 1; font-weight: bold;">${titre}</div>
+                            <div style="width: 100px;">${jaugeNiveau}</div>
+                        </div>
+                        <div style="font-size: 10px; font-weight: normal; color: grey; padding-left: 4px;">
+                            ${infos}
+                        </div>
+                    </td>
+                </tr>`;
+            }
         }
-        html += '</table>';
+        
+        html += `
+            </tbody>
+        </table>`;
+        
         return html;
     }
 
@@ -509,16 +864,76 @@ class PageFourmiliere {
      * Génère la liste des recherches avec leurs niveaux
      */
     genererListeRecherches() {
-        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">';
-        for (let i = 0; i < RECHERCHE.length; i++) {
-            let niveau = monProfil.niveauRecherche[i] || 0;
-            let couleur = niveau > 0 ? '#111' : '#ccc';
-            html += `<tr>
-                <td style="padding: 2px; color: ${couleur};">${RECHERCHE[i]}:</td>
-                <td style="padding: 2px; text-align: right; font-weight: bold; color: ${couleur};">Niveau ${niveau}</td>
-            </tr>`;
+        let html = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <tbody>`;
+        
+        // Utiliser les données récupérées via AJAX si disponibles
+        if (this.donneesRecherche && this.donneesRecherche.liste && this.donneesRecherche.liste.length > 0) {
+            $.each(this.donneesRecherche.liste, (index, ligne) => {
+                if (ligne.titre && ligne.titre.trim() !== '') {
+                    // Vérifier si cette recherche est en cours
+                    let enCours = this.donneesRecherche.encours && 
+                                 this.donneesRecherche.encours.encours && 
+                                 ligne.titre.includes(this.donneesRecherche.encours.encours);
+                    
+                    // Générer la jauge de niveau
+                    let jaugeNiveau = this.genererJaugeNiveau(ligne.niveau);
+                    
+                    // Couleur et style selon l'état
+                    let couleurTexte = enCours ? 'red' : (ligne.niveau > 0 ? 'black' : 'grey');
+                    let poidsPolice = enCours ? 'bold' : (ligne.niveau > 0 ? 'bold' : 'normal');
+                    let infos = enCours ? 
+                        `---> Niveau ${ligne.niveau + 1} terminé le ${this.donneesRecherche.encours.fin_encours}` : 
+                        ligne.infos || `Niveau actuel: ${ligne.niveau}`;
+                    
+                    html += `
+                    <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
+                        <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                                <div style="flex: 1; font-weight: bold;">${ligne.titre}</div>
+                                <div style="width: 100px;">${jaugeNiveau}</div>
+                            </div>
+                            <div style="font-size: ${enCours ? '12px' : '10px'}; font-weight: ${enCours ? 'bold' : 'normal'}; color: ${enCours ? 'red' : 'grey'}; padding-left: 4px;">
+                                ${infos}
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            });
+        } else {
+            // Fallback: utiliser les données locales si AJAX a échoué
+            for (let i = 0; i < RECHERCHE.length; i++) {
+                let niveau = monProfil.niveauRecherche[i] || 0;
+                let titre = RECHERCHE[i];
+                let infos = `Niveau actuel: ${niveau}`;
+                
+                // Générer la jauge de niveau
+                let jaugeNiveau = this.genererJaugeNiveau(niveau);
+                
+                // Couleur du texte selon le niveau
+                let couleurTexte = niveau > 0 ? 'black' : 'grey';
+                let poidsPolice = niveau > 0 ? 'bold' : 'normal';
+                
+                html += `
+                <tr style="color: ${couleurTexte}; font-weight: ${poidsPolice}; font-size: 12px;">
+                    <td colspan="3" style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                            <div style="flex: 1; font-weight: bold;">${titre}</div>
+                            <div style="width: 100px;">${jaugeNiveau}</div>
+                        </div>
+                        <div style="font-size: 10px; font-weight: normal; color: grey; padding-left: 4px;">
+                            ${infos}
+                        </div>
+                    </td>
+                </tr>`;
+            }
         }
-        html += '</table>';
+        
+        html += `
+            </tbody>
+        </table>`;
+        
         return html;
     }
 
@@ -625,6 +1040,21 @@ class PageFourmiliere {
         </a>`;
     }
 
+    /**
+     * Génère une jauge de niveau au style fourmizzz
+     */
+    genererJaugeNiveau(niveau) {
+        // Calculer le pourcentage sur 100 niveaux (max 100%)
+        let pourcentage = Math.min((niveau / 100) * 100, 100);
+        
+        return `
+        <div style="width: 95%; height: 15px; border: solid black 1px; display: block; background: #676b51; text-align: left;">
+            <div style="background: #ad572f; position: relative; left: 0px; top: 0px; height: 100%; border-right: solid black 1px; text-align: center; color: white; width: ${pourcentage}%; font-size: 10px; line-height: 15px;">
+                ${niveau}
+            </div>
+        </div>`;
+    }
+
     // ========================================
     // MÉTHODES DE GÉNÉRATION DE REINE
     // ========================================
@@ -662,7 +1092,7 @@ class PageFourmiliere {
                 <tr style="border-bottom: 1px solid #dee2e6;">
                     <td style="padding: 4px; font-weight: bold;">${ligne.unites}</td>
                     <td style="padding: 4px; text-align: center;">${ligne.garnison}</td>
-                    <td style="padding: 4px; text-align: center; color: #dc3545; font-size: 10px;">
+                    <td style="padding: 4px; text-align: center; font-size: 10px;">
                         ${ligne.temps_restant}
                     </td>
                 </tr>`;

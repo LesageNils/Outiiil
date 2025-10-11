@@ -685,6 +685,23 @@ center > div > #tabMembresAlliance {width:calc(100% - 20px);}
 .ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_microsec:before { content:'.'; display:inline-block; }
 .ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide,
 .ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide:before{ display: none; }
+/* Titres des cadres de synthèse */
+.o_titre_cadre
+{
+	margin-top: -12px;
+	margin-left: -12px;
+	margin-right: -12px;
+	padding: 4px 8px;
+	border-radius: 3px;
+	font-size: 14px;
+	cursor: pointer;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+	color: white;
+}
+
 /* Fichier css pour chrome */
 @media screen and (-webkit-min-device-pixel-ratio:0)
 {
