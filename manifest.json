@@ -62,6 +62,7 @@
 			"js/page/Construction.js",
 			"js/page/Description.js",
 			"js/page/Forum.js",
+			"js/page/fourmiliere.js",
 			"js/page/Laboratoire.js",
 			"js/page/Messagerie.js",
 			"js/page/Profil.js",

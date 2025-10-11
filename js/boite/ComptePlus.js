@@ -386,7 +386,7 @@ class BoiteComptePlus
         }else
             visible == null || visible == "C" ? "" : $("#boiteComptePlus .contenu_boite_compte_plus table:eq(0)").css('display', 'none');
         // effet highlight si du terrain est decouvert
-        let tooltipConso = $("<div/>").append($("#tableau_boite_info").next().text().split("content:")[1].split("})")[0].replace(/"/g, ''));
+        let tooltipConso = $("<div/>").append($("#tableau_boite_info").next().text().split("content:")[1].split("})")[0].replace(/"/g, '').replace(/\/$/, ''));
         if(Utils.terrain * 48 != numeral(tooltipConso.find("td:eq(7)").text()).value() + numeral(tooltipConso.find("td:eq(8)").text()).value() && Utils.ouvrieres > Utils.terrain)
             $("#boite_info_tdc .jauge").addClass("highlight_error");
     }
