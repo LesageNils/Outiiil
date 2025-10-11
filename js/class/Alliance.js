@@ -292,4 +292,176 @@ class Alliance
             }
         });
     }
+
+    /**
+     * Récupère les membres de l'alliance depuis alliance.php
+     */
+    static recupererMembres()
+    {
+        const defer = $.Deferred();
+        
+        $.post(`http://${Utils.serveur}.fourmizzz.fr/alliance.php?Membres`, {
+            xajax: "membre",
+            xajaxr: new Date().getTime()
+        }, function(data) {
+            try {
+                const page = $(data).find('cmd[t="alliance"]').html();
+                
+                if (!page) {
+                    defer.reject("Aucune page trouvée");
+                    return;
+                }
+                
+                const membres = Alliance.analyserMembres(page);
+                
+                // Sauvegarder dans localStorage
+                localStorage.setItem("outiiil_alliance", JSON.stringify({
+                    membres: membres,
+                    timestamp: new Date().toISOString()
+                }));
+                
+                defer.resolve(membres);
+            } catch (error) {
+                console.warn("Erreur lors de la récupération des membres d'alliance:", error);
+                defer.reject(error);
+            }
+        }).fail(function(xhr, status, error) {
+            console.warn("Erreur AJAX:", status, error);
+            defer.reject(error);
+        });
+        
+        return defer.promise();
+    }
+
+    /**
+     * Analyse le HTML des membres d'alliance
+     */
+    static analyserMembres(pageHtml)
+    {
+        const array = [];
+        const headers = [];
+
+        // Récupérer les en-têtes
+        $(pageHtml).find('#tabMembresAlliance th').each(function(index, item) {
+            if ($(item).html() !== "") {
+                headers[index] = $(item).text();
+            } else {
+                headers[index] = index;
+            }
+        });
+
+        headers.splice(6, 0, 'new');
+
+        // Analyser chaque ligne de membre
+        const trElements = $(pageHtml).find('#tabMembresAlliance tr').has('td');
+        
+        trElements.each(function(rowIndex, row) {
+            const arrayItem = {};
+            arrayItem.colo = "";
+            
+            $('td', $(row)).each(function(index, item) {
+                const cont = $(item).html();
+                const text = $(item).text();
+                
+                if (cont.match(/Colonisé/)) {
+                    arrayItem.colo = cont;
+                } else if (cont.match(/Actif/)) {
+                    arrayItem.etat = "Actif";
+                } else if (cont.match(/Inactif depuis 3 jours/)) {
+                    arrayItem.etat = "Inactif depuis 3 jours";
+                } else if (cont.match(/Inactif depuis 10 jours/)) {
+                    arrayItem.etat = "Inactif depuis 10 jours";
+                } else if (cont.match(/Vacances/)) {
+                    arrayItem.etat = "Vacances";
+                } else if (cont.match(/Bannie/)) {
+                    arrayItem.etat = "Bannie";
+                } else {
+                    arrayItem[headers[index]] = cont;
+                }
+            });
+            array.push(arrayItem);
+        });
+
+        // Transformer en format standardisé
+        const membres = {};
+        $.each(array, function(index, ligne) {
+            const membre = {
+                pseudo: $(ligne.Pseudo).filter('a').text(),
+                rang: ligne.Rang,
+                terrain: ligne.Terrain,
+                etat: ligne.etat,
+                colo: ligne.colo,
+                technologie: ligne.Technologie,
+                fourmiliere: ligne.Fourmiliere,
+                defense: false,
+                attaque: false
+            };
+
+            // Calculer les possibilités d'attaque/défense
+            if (ligne.Terrain && monProfil.terrain) {
+                const terrainMembre = parseInt(ligne.Terrain);
+                const terrainJoueur = parseInt(monProfil.terrain);
+                membre.defense = 0.5 * terrainMembre + 1 <= terrainJoueur && 3 * terrainMembre - 1 >= terrainJoueur;
+                membre.attaque = terrainMembre >= 0.5 * terrainJoueur + 1 && terrainMembre <= 3 * terrainJoueur - 1;
+            }
+
+            membres[membre.pseudo] = membre;
+        });
+
+        return membres;
+    }
+
+    /**
+     * Charge les membres depuis localStorage
+     */
+    static chargerMembres()
+    {
+        try {
+            const data = JSON.parse(localStorage.getItem("outiiil_alliance")) || {};
+            return data.membres || {};
+        } catch (error) {
+            console.warn("Erreur lors du chargement des membres d'alliance:", error);
+            return {};
+        }
+    }
+
+    /**
+     * Force la mise à jour des membres depuis la page actuelle
+     */
+    static mettreAJourDepuisPage()
+    {
+        try {
+            // Vérifier si la session est expirée
+            if ($('body').text().includes('Session expirée') || $('body').text().includes('Merci de vous reconnecter')) {
+                return {};
+            }
+            
+            // Chercher le tableau des membres directement
+            const tableMembres = $('#tabMembresAlliance');
+            
+            if (tableMembres.length === 0) {
+                return {};
+            }
+            
+            const membres = Alliance.analyserMembres(tableMembres[0].outerHTML);
+            
+            // Sauvegarder dans localStorage
+            localStorage.setItem("outiiil_alliance", JSON.stringify({
+                membres: membres,
+                timestamp: new Date().toISOString()
+            }));
+            
+            // Rafraîchir l'affichage si ComptePlus est disponible
+            if (window.boiteComptePlus && typeof window.boiteComptePlus.afficherMembresAlliance === 'function') {
+                setTimeout(() => {
+                    window.boiteComptePlus.afficherMembresAlliance();
+                }, 100);
+            }
+            
+            return membres;
+        } catch (error) {
+            console.warn("Erreur lors de la mise à jour depuis la page:", error);
+            return {};
+        }
+    }
 }

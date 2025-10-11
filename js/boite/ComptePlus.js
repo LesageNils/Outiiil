@@ -357,21 +357,26 @@ class BoiteComptePlus
             // Ajout du contenue
             $("#boiteComptePlus").replaceWith("<div id='boiteComptePlus' class='boite_compte_plus'><div class='titre_colonne_cliquable'><span class='titre_compte_plus'>Outiiil " + VERSION.substring(0, 2) + "<span class='reduce'>" + VERSION.substring(2) + "</span></span></div><div class='contenu_boite_compte_plus'><table " + (visible == null || visible == "C" ? "" : "style='display:none'") + ">"
                 // Ligne ponte
-                + "<tr class='lien' title='Aller sur Reine'><td><a href='Reine.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_ponte'/><div id='o_resteUnite' class='o_labelBoite'></div><div id='o_tempsUnite' class='o_labelTempsBoite'></div><div id='o_progressUnite'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Reine'><td><a href='Reine.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_ponte' style='display:block'/><div id='o_resteUnite' class='o_labelBoite'></div><div id='o_tempsUnite' class='o_labelTempsBoite'></div><div id='o_progressUnite'/></div></a></td></tr>"
                 // Ligne construction
-                + "<tr class='lien' title='Aller sur Construction'><td><a href='construction.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_construction'/><div id='o_resteConstruction' class='o_labelBoite'>Aucune construction</div><div id='o_tempsConstruction' class='o_labelTempsBoite'></div><div id='o_progressConstruction'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Construction'><td><a href='construction.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_construction' style='display:block'/><div id='o_resteConstruction' class='o_labelBoite'>Aucune construction</div><div id='o_tempsConstruction' class='o_labelTempsBoite'></div><div id='o_progressConstruction'/></div></a></td></tr>"
                 // Ligne recherche
-                + "<tr class='lien' title='Aller sur Laboratoire'><td><a href='laboratoire.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_recherche'/><div id='o_resteRecherche' class='o_labelBoite'>Aucune recherche</div><div id='o_tempsRecherche' class='o_labelTempsBoite'></div><div id='o_progressRecherche'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Laboratoire'><td><a href='laboratoire.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_recherche' style='display:block'/><div id='o_resteRecherche' class='o_labelBoite'>Aucune recherche</div><div id='o_tempsRecherche' class='o_labelTempsBoite'></div><div id='o_progressRecherche'/></div></a></td></tr>"
                 // Ligne Chasse
-                + "<tr class='lien' title='Aller sur Ressource'><td><a href='Ressources.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_chasse'/><div id='o_resteChasse' class='o_labelBoite'></div><div id='o_tempsChasse' class='o_labelTempsBoite'></div><div id='o_progressChasse'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Ressource'><td><a href='Ressources.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_chasse' style='display:block'/><div id='o_resteChasse' class='o_labelBoite'></div><div id='o_tempsChasse' class='o_labelTempsBoite'></div><div id='o_progressChasse'/></div></a></td></tr>"
                 // Ligne attaque
-                + "<tr class='lien' title='Aller sur Armée'><td><a href='Armee.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_attaque'/><div id='o_resteAttaque' class='o_labelBoite'></div><div id='o_tempsAttaque' class='o_labelTempsBoite'></div><div id='o_progressAttaque'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Armée'><td><a href='Armee.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_attaque' style='display:block'/><div id='o_resteAttaque' class='o_labelBoite'></div><div id='o_tempsAttaque' class='o_labelTempsBoite'></div><div id='o_progressAttaque'/></div></a></td></tr>"
                 // Ligne Convoi
-                + "<tr class='lien' title='Aller sur Convoi'><td><a href='commerce.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_convoi'/><div id='o_resteConvoi' class='o_labelBoite'></div><div id='o_tempsConvoi' class='o_labelTempsBoite'></div><div id='o_progressConvoi'/></div></a></td></tr>"
+                + "<tr class='lien' title='Aller sur Convoi'><td><a href='commerce.php'><div style='position:relative;height:27px;padding-left:5px;'><div class='mini_icone_convoi' style='display:block'/><div id='o_resteConvoi' class='o_labelBoite'></div><div id='o_tempsConvoi' class='o_labelTempsBoite'></div><div id='o_progressConvoi'/></div></a></td></tr>"
                  // Formulaire de recherche
-                + "</table><form method='post' action='classementAlliance.php' style='text-align:center;margin-top:5px;'><input type='text' name='requete' id='recherche' placeholder='Joueur ou Alliance'/></form></div></div>");
+                + "</table><form method='post' action='classementAlliance.php' style='text-align:center;margin-top:5px;'><input type='text' name='requete' id='recherche' placeholder='Joueur ou Alliance'/></form>"
+                 // Section membres d'alliance
+                + "<div id='sectionMembresAlliance' style='margin-top:10px;'></div></div></div>");
             // Remplissage des champs
-            this.verifierDonnees().majPonte().majConstruction().majRecherche().majAttaque().majConvoi().majChasse();
+            this.verifierDonnees().majPonte().majConstruction().majRecherche().majAttaque().majConvoi().majChasse().afficherMembresAlliance();
+            
+            // Exposer l'instance pour les mises à jour
+            window.boiteComptePlus = this;
             // Formatage du title
             $("#boiteComptePlus table tr").tooltip({
                 tooltipClass : "warning-tooltip",
@@ -553,4 +558,71 @@ class BoiteComptePlus
         }
         return this;
 	}
+
+    /**
+     * Affiche les membres d'alliance dans la boîte ComptePlus
+     */
+    afficherMembresAlliance()
+    {
+        const membres = Alliance.chargerMembres();
+        const section = $("#sectionMembresAlliance");
+        
+        if (Object.keys(membres).length === 0) {
+            section.html(`
+                <button style="width:100%; font-size:12px; padding:5px;" onclick="location.href='http://${Utils.serveur}.fourmizzz.fr/alliance.php?Membres';">
+                    <div class='mini_icone_info'/> Membres Alliance<br>
+                    <small>Mise à jour nécessaire...<br>Cliquez <b>ici</b></small>
+                </button>
+                <button style="width:100%; font-size:10px; padding:2px; margin-top:2px; background:#f0f0f0;" onclick="Alliance.mettreAJourDepuisPage();">
+                    🔄 Mettre à jour depuis cette page
+                </button>
+            `);
+            return this;
+        }
+
+        let html = `
+            <div style="width:95%; padding:5px;">
+            <button style='width:100%; background-color:rgb(54, 52, 52); color:white; height:24px; margin-top:7px; cursor: pointer; border-radius:4px;' onclick=\"location.href='http://"+serveur+".fourmizzz.fr/alliance.php?Membres';\">Membres de l'alliance</button>
+            <div style="max-height:200px; overflow-y:auto; border-radius:4px; padding:3px;">
+        `;
+
+        // Couleurs d'état
+        const couleursEtat = {
+            "Actif": "#2EBF23",
+            "Inactif depuis 3 jours": "#FFA500", 
+            "Inactif depuis 10 jours": "#FF6B6B",
+            "Vacances": "#4ECDC4",
+            "Bannie": "#FF0000"
+        };
+
+        $.each(membres, (pseudo, membre) => {
+            const couleurEtat = couleursEtat[membre.etat] || "#666";
+            const estJoueurActuel = pseudo === monProfil.pseudo;
+            const couleurTexte = estJoueurActuel ? "blue" : (membre.attaque ? "red" : "black");
+            
+            html += `
+                <button title="${pseudo}" 
+                        onclick="location.href='http://${Utils.serveur}.fourmizzz.fr/Membre.php?Pseudo=${pseudo}';" 
+                        style="border-radius:6px; border: 0px solid black; border-left: solid 6px ${couleurEtat}; font-size:10px; text-align:left; width:95%; cursor:pointer; margin-bottom:2px; ${estJoueurActuel ? "background-color: hsl(234, 83.00%, 67.60%);" : ""}">
+                    <span style="font-size:12px; font-weight:bold;">
+                        ${membre.colo || ""}${estJoueurActuel ? "<font color='blue'>" : ""}${pseudo.toUpperCase()}
+                        <span style="font-size:9px; float:right; text-align:right;">
+                            [T:${membre.technologie || "?"} | F:${membre.fourmiliere || "?"}]
+                        </span>
+                    </span><br>
+                    <span style="float:right; text-align:right;">
+                        ${membre.defense ? "🛡️" : ""}${membre.attaque ? "⚔️" : ""}
+                    </span>
+                    ${membre.rang || ""}<br>
+                    <span style="font-weight:bolder; font-size:12px; color:${couleurTexte};">
+                        ${membre.terrain || "?"} cm²
+                    </span>
+                </button>
+            `;
+        });
+
+        html += "</div></div>";
+        section.html(html);
+        return this;
+    }
 }

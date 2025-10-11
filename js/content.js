@@ -245,6 +245,14 @@ const DATEPICKER_OPTION = {
             if (values[1]) monProfil.chargerRecherche(values[1]);
             if (values[2]) monProfil.chargerProfil(values[2]);
 
+            // Chargement des membres d'alliance (toujours essayer, même si pas d'alliance)
+            Alliance.recupererMembres().catch(error => {
+                console.warn("Impossible de charger les membres d'alliance:", error);
+            });
+
+            // Exposer les classes globalement
+            window.Alliance = Alliance;
+            
             // Ajout des outils
             let boite = new Dock();
             boite.afficher();
@@ -269,6 +277,12 @@ const DATEPICKER_OPTION = {
                 case (uri == "/fourmiliere.php"):
                     page = new PageFourmiliere();
                     page.executer();
+                    break;
+                case (uri == "/alliance.php"):
+                    // Mise à jour des membres d'alliance depuis la page actuelle
+                    if (location.search.includes("Membres")) {
+                        Alliance.mettreAJourDepuisPage();
+                    }
                     break;
                 case (uri == "/Reine.php"):
                     page = new PageReine(boiteComptePlus);
