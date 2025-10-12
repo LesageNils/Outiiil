@@ -86,7 +86,6 @@ class Historique
                     if (Object.keys(this._tabHistoTdc).length > 0) {
                         // Récupérer les alliances pour toutes les entrées
                         await this._recupererAlliances();
-                        console.log("Historique TDC mis à jour:", Object.keys(this._tabHistoTdc).length, "entrées");
                     }
                     defer.resolve(this._tabHistoTdc);
                 });
@@ -170,8 +169,6 @@ class Historique
     {
         const defer = $.Deferred();
         
-        console.log("Récupération de l'alliance pour:", pseudo);
-        
         $.ajax({
             url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php`,
             type: 'GET',
@@ -179,7 +176,6 @@ class Historique
             dataType: 'html',
             success: (page) => {
                 const alliance = $(page).find('td:contains("Alliance")').next().text().trim();
-                console.log("Alliance trouvée pour", pseudo, ":", alliance);
                 defer.resolve({ Alliance: alliance });
             },
             error: (xhr, status, error) => {
@@ -232,7 +228,6 @@ class Historique
             };
             
             localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
-            console.log("Historique TDC sauvegardé dans localStorage");
             
             // Rafraîchir l'affichage si on est sur l'onglet historique
             this._rafraichirAffichage();
@@ -259,7 +254,6 @@ class Historique
                     this._getInfosJoueur(entree.cible).then(infos => {
                         if (infos && infos.Alliance) {
                             this._tabHistoTdc[msgId].alliance = infos.Alliance;
-                            console.log("Alliance mise à jour pour", entree.cible, ":", infos.Alliance);
                         }
                     }).catch(error => {
                         console.warn("Erreur lors de la récupération de l'alliance pour", entree.cible, ":", error);
@@ -267,8 +261,6 @@ class Historique
                 );
             }
         }
-        
-        console.log("Récupération des alliances pour", entreesSansAlliance.length, "entrées:", entreesSansAlliance);
         
         if (promises.length > 0) {
             await Promise.all(promises);
@@ -319,6 +311,43 @@ class Historique
     }
 
     /**
+     * Récupère les couleurs du thème (même système que fourmiliere.js)
+     * 
+     * @method getCouleursTheme
+     * @return {Object} Objet contenant les couleurs du thème
+     */
+    getCouleursTheme()
+    {
+        // Utiliser les mêmes paramètres de couleur que fourmiliere.js
+        return {
+            texte: monProfil.parametre["couleurTexte"]?.valeur || "#000000",
+            fond: monProfil.parametre["couleur1"]?.valeur || "#f8f9fa",
+            bordure: monProfil.parametre["couleur3"]?.valeur || "#dee2e6",
+            alternance: monProfil.parametre["couleur2"]?.valeur || "#e9ecef",
+            titre: "#bd8d46"
+        };
+    }
+
+    /**
+     * Génère un bouton d'ouverture de page (même style que fourmiliere.js)
+     * 
+     * @method genererBoutonOuvrir
+     * @param {String} url - URL à ouvrir
+     * @return {String} HTML du bouton
+     */
+    genererBoutonOuvrir(url)
+    {
+        const couleur = "#bd8d46";
+        return `
+        <button onclick="window.open('${url}', '_blank')" 
+                style="margin-left: auto; background: ${couleur}; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
+                onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
+                onmouseout="this.style.background='${couleur}'; this.style.transform='scale(1)'">
+            Ouvrir
+        </button>`;
+    }
+
+    /**
      * Génère le HTML pour l'affichage de l'historique TDC
      * 
      * @method genererHTML
@@ -330,35 +359,50 @@ class Historique
         const historiqueLocalStorage = this.chargerHistorique();
         const historiqueComplet = { ...historiqueLocalStorage, ...this._tabHistoTdc };
         
-        let html = `<div id='histotdc' style='width:95%; margin: 3px; background:#f8f9fa; font-size:11px; padding: 8px; border-radius: 4px; border: 1px solid #dee2e6;'>`;
+        // Utiliser le même système de couleurs que la synthèse
+        const couleurs = this.getCouleursTheme();
+        
+        let html = `<div class="section-info" style="
+            background: ${couleurs.alternance};
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        ">`;
+        
+        // Titre avec icône
+        html += `<h3 class="o_titre_cadre" style="background:${couleurs.titre};">
+            <div class='mini_icone_historique'/> Historique TDC
+            ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`)}
+        </h3>`;
         
         // Trier par date (plus récent en premier)
         const entreesTriees = Object.values(historiqueComplet).sort((a, b) => new Date(b.date) - new Date(a.date));
         
         // Créer les filtres par type
-        html += this.creerFiltres(entreesTriees);
+        html += this.creerFiltres(entreesTriees, couleurs);
         
         // Tableau avec colonnes alignées
         html += `<table id="tableau-historique" style="
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
-            background: white;
+            background: ${couleurs.fond};
             border-radius: 4px;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: ${couleurs.texte};
         ">`;
         
         // En-tête du tableau
         html += `<thead>
-            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 12%;">Type</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Cible</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Alliance</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Lieu</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 20%;">Détails</th>
-                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: #495057; width: 8%;">Quantité</th>
-                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Date</th>
+            <tr style="background: ${couleurs.alternance}; border-bottom: 2px solid ${couleurs.bordure};">
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 12%;">Type</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Cible</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Alliance</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Lieu</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 20%;">Détails</th>
+                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 8%;">Quantité</th>
+                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Date</th>
             </tr>
         </thead>
         <tbody>`;
@@ -407,9 +451,10 @@ class Historique
             
             // Ligne du tableau
             html += `<tr class="ligne-historique" data-type="${entree.type}" style="
-                border-bottom: 1px solid #dee2e6;
+                border-bottom: 1px solid ${couleurs.bordure};
                 transition: background-color 0.2s;
-            " onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">`;
+                background: ${couleurs.fond};
+            " onmouseover="this.style.backgroundColor='${couleurs.alternance}'" onmouseout="this.style.backgroundColor='${couleurs.fond}'">`;
             
             // Type
             html += `<td style="padding: 8px; font-size: 11px;">
@@ -417,22 +462,22 @@ class Historique
             </td>`;
             
             // Cible
-            html += `<td style="padding: 8px; font-size: 11px; font-weight: bold;">
+            html += `<td style="padding: 8px; font-size: 11px; font-weight: bold; color: ${couleurs.texte};">
                 ${entree.cible}
             </td>`;
             
             // Alliance
-            html += `<td style="padding: 8px; font-size: 10px; color: #6c757d;">
+            html += `<td style="padding: 8px; font-size: 10px; color: ${couleurs.texte};">
                 ${entree.alliance || '-'}
             </td>`;
             
             // Lieu
-            html += `<td style="padding: 8px; font-size: 10px; color: #6c757d;">
+            html += `<td style="padding: 8px; font-size: 10px; color: ${couleurs.texte};">
                 ${affichageLieu || '-'}
             </td>`;
             
             // Détails
-            html += `<td style="padding: 8px; font-size: 9px; color: #6c757d;">
+            html += `<td style="padding: 8px; font-size: 9px; color: ${couleurs.texte};">
                 ${this.genererDetailsAffichage(entree)}
             </td>`;
             
@@ -442,7 +487,7 @@ class Historique
             </td>`;
             
             // Date
-            html += `<td style="padding: 8px; font-size: 10px; text-align: right; color: #6c757d;">
+            html += `<td style="padding: 8px; font-size: 10px; text-align: right; color: ${couleurs.texte};">
                 ${Utils.formaterDateFrancaise(entree.date)}
             </td>`;
             
@@ -453,7 +498,7 @@ class Historique
         
         // Résumé compact en une seule ligne
         const stats = this.getStatistiques();
-        html += `<div style="font-size: 10px; color: #6c757d; text-align: center; padding: 5px; border-top: 1px solid #dee2e6; margin-top: 8px;">
+        html += `<div style="font-size: 10px; color: ${couleurs.texte}; text-align: center; padding: 5px; border-top: 1px solid ${couleurs.bordure}; margin-top: 8px;">
             <strong>${stats.totalEntrees} événements</strong> | 
             Butin: <span style="color: #28a745;">${stats.totalButin.toLocaleString()} cm²</span> | 
             Vol: <span style="color: #dc3545;">${stats.totalVol.toLocaleString()} cm²</span> | 
@@ -473,9 +518,10 @@ class Historique
      * 
      * @method creerFiltres
      * @param {Array} entrees - Liste des entrées d'historique
+     * @param {Object} couleurs - Couleurs du thème
      * @return {String} HTML des filtres
      */
-    creerFiltres(entrees)
+    creerFiltres(entrees, couleurs)
     {
         // Compter les événements par type
         const compteurs = {};
@@ -484,7 +530,7 @@ class Historique
         });
         
         const types = ["Tous", "Butin", "Vol", "Attaque réussie", "Attaque échouée", "Rébellion réussie", "Chasse réussie"];
-        const couleurs = {
+        const couleursTypes = {
             "Tous": "#6c757d",
             "Butin": "#28a745",
             "Vol": "#dc3545", 
@@ -494,13 +540,13 @@ class Historique
             "Chasse réussie": "#20c997"
         };
         
-        let html = `<div style="margin-bottom: 10px; padding: 8px; background: #e9ecef; border-radius: 4px;">
+        let html = `<div style="margin-bottom: 10px; padding: 8px; background: ${couleurs.fond}; border: 1px solid ${couleurs.bordure}; border-radius: 4px;">
             <div style="display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
-                <span style="font-size: 11px; font-weight: bold; margin-right: 10px;">Filtrer par type:</span>`;
+                <span style="font-size: 11px; font-weight: bold; margin-right: 10px; color: ${couleurs.texte};">Filtrer par type:</span>`;
         
         types.forEach(type => {
             const count = type === "Tous" ? entrees.length : (compteurs[type] || 0);
-            const couleur = couleurs[type];
+            const couleur = couleursTypes[type];
             
             html += `<button class="filtre-btn" data-type="${type}" style="
                 background: ${couleur};

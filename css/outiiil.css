@@ -758,6 +758,18 @@ center > div > #tabMembresAlliance {width:calc(100% - 20px);}
 	margin-right: 5px;
 }
 
+.mini_icone_historique {
+	display: inline-block;
+	width: 24px;
+	height: 26px;
+	background-image: url('../images/historique.png');
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center;
+	vertical-align: middle;
+	margin-right: 5px;
+}
+
 /* Fichier css pour chrome */
 @media screen and (-webkit-min-device-pixel-ratio:0)
 {
