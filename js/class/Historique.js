@@ -400,13 +400,11 @@ class Historique
         // En-tête du tableau
         html += `<thead>
             <tr style="background: ${couleurs.alternance}; border-bottom: 2px solid ${couleurs.bordure};">
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 12%;">Type</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Cible</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Alliance</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Lieu</th>
-                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 20%;">Détails</th>
-                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 8%;">Quantité</th>
-                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 15%;">Date</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 120px;">Type</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 100px;">Cible</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 100px;">Lieu</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: ${couleurs.texte};">Détails</th>
+                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: ${couleurs.texte}; width: 150px;">Quantité</th>
             </tr>
         </thead>
         <tbody>`;
@@ -460,19 +458,16 @@ class Historique
                 background: ${couleurs.fond};
             " onmouseover="this.style.backgroundColor='${couleurs.alternance}'" onmouseout="this.style.backgroundColor='${couleurs.fond}'">`;
             
-            // Type
+            // Type (avec date au-dessus)
             html += `<td style="padding: 8px; font-size: 11px;">
+                <div style="font-size: 9px; color: #6c757d; margin-bottom: 2px;">${Utils.formaterDateFrancaise(entree.date)}</div>
                 <strong style="color: ${couleurTexte};">${entree.type}</strong>
             </td>`;
             
-            // Cible
+            // Cible (avec alliance en dessous)
             html += `<td style="padding: 8px; font-size: 11px; font-weight: bold; color: ${couleurs.texte};">
-                ${entree.cible}
-            </td>`;
-            
-            // Alliance
-            html += `<td style="padding: 8px; font-size: 10px; color: ${couleurs.texte};">
-                ${entree.alliance || '-'}
+                ${entree.cible ? `<a href="http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${encodeURIComponent(entree.cible)}" target="_blank" style="color: ${couleurs.texte}; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${entree.cible}</a>` : '-'}
+                ${entree.alliance ? `<br/><span style="font-size: 9px; color: #6c757d; font-weight: normal;">[${entree.alliance}]</span>` : ''}
             </td>`;
             
             // Lieu
@@ -490,10 +485,6 @@ class Historique
                 ${affichageQte || '-'}
             </td>`;
             
-            // Date
-            html += `<td style="padding: 8px; font-size: 10px; text-align: right; color: ${couleurs.texte};">
-                ${Utils.formaterDateFrancaise(entree.date)}
-            </td>`;
             
             html += `</tr>`;
         });
@@ -1127,12 +1118,12 @@ class Historique
         
         // Troupes en attaque
         if (entree.troupesAttaque) {
-            details.push(`⚔️ Att: ${entree.troupesAttaque.substring(0, 30)}${entree.troupesAttaque.length > 30 ? '...' : ''}`);
+            details.push(`⚔️ Att: ${entree.troupesAttaque}`);
         }
         
         // Troupes en défense
         if (entree.troupesDefense) {
-            details.push(`🛡️ Déf: ${entree.troupesDefense.substring(0, 30)}${entree.troupesDefense.length > 30 ? '...' : ''}`);
+            details.push(`🛡️ Déf: ${entree.troupesDefense}`);
         }
         
         // Trophées
