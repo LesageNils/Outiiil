@@ -381,6 +381,9 @@ class Historique
         // Créer les filtres par type
         html += this.creerFiltres(entreesTriees, couleurs);
         
+        // Graphique d'évolution du TDC
+        html += this.creerGraphiqueEvolution(entreesTriees, couleurs);
+        
         // Tableau avec colonnes alignées
         html += `<table id="tableau-historique" style="
             width: 100%;
@@ -511,6 +514,163 @@ class Historique
         
         html += `</div>`;
         return html;
+    }
+
+    /**
+     * Crée le graphique d'évolution du TDC dans le temps
+     * 
+     * @method creerGraphiqueEvolution
+     * @param {Array} entrees - Liste des entrées d'historique
+     * @param {Object} couleurs - Couleurs du thème
+     * @return {String} HTML du graphique
+     */
+    creerGraphiqueEvolution(entrees, couleurs)
+    {
+        if (entrees.length === 0) {
+            return `<div style="text-align: center; padding: 20px; color: ${couleurs.texte}; font-style: italic;">
+                Aucune donnée disponible pour le graphique
+            </div>`;
+        }
+
+        // Préparer les données pour le graphique
+        const donneesGraphique = this.preparerDonneesGraphique(entrees);
+        
+        // Stocker les données pour le graphique
+        this._donneesGraphique = donneesGraphique;
+        this._couleursGraphique = couleurs;
+        
+        const tdcActuel = donneesGraphique.tdcActuel;
+        const tdcOrigine = donneesGraphique.tdcOrigine;
+        const difference = tdcActuel - tdcOrigine;
+        
+        return `
+        <div style="margin-bottom: 20px; background: ${couleurs.fond}; border: 1px solid ${couleurs.bordure}; border-radius: 6px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: ${couleurs.texte}; font-size: 14px; text-align: center;">
+                📈 Évolution du TDC dans le temps
+            </h4>
+            <div style="text-align: center; margin-bottom: 10px; font-size: 11px; color: ${couleurs.texte};">
+                <span style="color: #28a745;">TDC actuel: ${numeral(tdcActuel).format('0,0')} cm²</span> | 
+                <span style="color: #6c757d;">TDC d'origine: ${numeral(tdcOrigine).format('0,0')} cm²</span> | 
+                <span style="color: ${difference >= 0 ? '#28a745' : '#dc3545'};">Évolution: ${difference >= 0 ? '+' : ''}${numeral(difference).format('0,0')} cm²</span>
+            </div>
+            <div id="graphique-evolution-tdc" style="height: 300px; width: 100%;"></div>
+        </div>`;
+    }
+
+    /**
+     * Prépare les données pour le graphique d'évolution
+     * 
+     * @method preparerDonneesGraphique
+     * @param {Array} entrees - Liste des entrées d'historique
+     * @return {Object} Données formatées pour Highcharts
+     */
+    preparerDonneesGraphique(entrees)
+    {
+        // Récupérer le TDC actuel depuis les données du joueur
+        const tdcActuel = this.getTdcActuel();
+        
+        // Trier par date (plus récent en premier pour calculer le TDC d'origine)
+        const entreesTriees = [...entrees].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Calculer le TDC d'origine en retranchant tous les événements
+        let tdcOrigine = tdcActuel;
+        entreesTriees.forEach(entree => {
+            switch(entree.type) {
+                case "Butin":
+                case "Chasse réussie":
+                    tdcOrigine -= entree.qte; // Retrancher les gains
+                    break;
+                case "Vol":
+                    tdcOrigine += entree.qte; // Ajouter les pertes
+                    break;
+            }
+        });
+        
+        // Maintenant trier par date (plus ancien en premier pour le graphique)
+        const entreesPourGraphique = [...entrees].sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let soldeActuel = tdcOrigine;
+        const solde = [];
+        const butin = [];
+        const vol = [];
+        const chasse = [];
+        
+        // Ajouter le point de départ (TDC d'origine)
+        if (entreesPourGraphique.length > 0) {
+            const premiereDate = new Date(entreesPourGraphique[0].date).getTime();
+            solde.push([premiereDate, tdcOrigine]);
+        }
+        
+        entreesPourGraphique.forEach(entree => {
+            const timestamp = new Date(entree.date).getTime();
+            
+            switch(entree.type) {
+                case "Butin":
+                    soldeActuel += entree.qte;
+                    butin.push({
+                        x: timestamp,
+                        y: soldeActuel,
+                        entree: entree,
+                        type: 'butin'
+                    });
+                    solde.push([timestamp, soldeActuel]);
+                    break;
+                case "Vol":
+                    soldeActuel -= entree.qte;
+                    vol.push({
+                        x: timestamp,
+                        y: soldeActuel,
+                        entree: entree,
+                        type: 'vol'
+                    });
+                    solde.push([timestamp, soldeActuel]);
+                    break;
+                case "Chasse réussie":
+                    soldeActuel += entree.qte;
+                    chasse.push({
+                        x: timestamp,
+                        y: soldeActuel,
+                        entree: entree,
+                        type: 'chasse'
+                    });
+                    solde.push([timestamp, soldeActuel]);
+                    break;
+            }
+        });
+        
+        return { 
+            solde, 
+            butin, 
+            vol, 
+            chasse, 
+            tdcActuel, 
+            tdcOrigine,
+            totalEntrees: entrees.length
+        };
+    }
+
+    /**
+     * Récupère le TDC actuel depuis les données du joueur
+     * 
+     * @method getTdcActuel
+     * @return {Number} TDC actuel en cm²
+     */
+    getTdcActuel()
+    {
+        try {
+            const donneesJoueur = JSON.parse(localStorage.getItem("outiiil_joueur")) || {};
+            const terrain = donneesJoueur.terrain || donneesJoueur.Terrain || 0;
+            
+            // Convertir en nombre si c'est une chaîne
+            if (typeof terrain === 'string') {
+                return parseInt(terrain.replace(/[^\d]/g, '')) || 0;
+            }
+            
+            return terrain || 0;
+        } catch (error) {
+            console.warn("Erreur lors de la récupération du TDC actuel:", error);
+            return 0;
+        }
     }
 
     /**
@@ -1015,7 +1175,7 @@ class Historique
     }
 
     /**
-     * Initialise les filtres après insertion du HTML dans le DOM
+     * Initialise les filtres et le graphique après insertion du HTML dans le DOM
      * 
      * @method initialiserFiltres
      */
@@ -1042,6 +1202,166 @@ class Historique
                 });
             });
         });
+        
+        // Créer le graphique si les données sont disponibles
+        this.creerGraphique();
+    }
+
+    /**
+     * Crée le graphique d'évolution du TDC
+     * 
+     * @method creerGraphique
+     */
+    creerGraphique()
+    {
+        if (!this._donneesGraphique || !this._couleursGraphique) {
+            return;
+        }
+
+        const donneesGraphique = this._donneesGraphique;
+        const couleurs = this._couleursGraphique;
+
+        if (typeof Highcharts === 'undefined') {
+            console.warn("Highcharts n'est pas disponible pour créer le graphique");
+            return;
+        }
+
+        try {
+            new Highcharts.Chart({
+                chart: {
+                    renderTo: 'graphique-evolution-tdc',
+                    type: 'spline',
+                    backgroundColor: 'transparent',
+                    height: 300
+                },
+                title: { text: '' },
+                credits: { enabled: false },
+                xAxis: {
+                    type: 'datetime',
+                    title: { 
+                        text: 'Date et heure',
+                        style: { color: couleurs.texte }
+                    },
+                    labels: {
+                        style: { color: couleurs.texte },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%d/%m %H:%M', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    title: { 
+                        text: 'Terrain (cm²)',
+                        style: { color: couleurs.texte }
+                    },
+                    labels: {
+                        style: { color: couleurs.texte },
+                        formatter: function() {
+                            return numeral(this.value).format('0.0a');
+                        }
+                    }
+                },
+                tooltip: {
+                    crosshairs: [true],
+                    formatter: function() {
+                        let s = '<b>' + Highcharts.dateFormat('%A %e %b %Y à %H:%M', this.x) + '</b>';
+                        
+                        if (this.point && this.point.entree) {
+                            // Point avec détails d'événement
+                            const entree = this.point.entree;
+                            s += '<br/><br/><b>Événement:</b> ' + entree.type;
+                            s += '<br/><b>Cible:</b> ' + (entree.cible || 'N/A');
+                            if (entree.alliance) {
+                                s += '<br/><b>Alliance:</b> ' + entree.alliance;
+                            }
+                            if (entree.lieu) {
+                                s += '<br/><b>Lieu:</b> ' + entree.lieu;
+                            }
+                            s += '<br/><b>Terrain:</b> ' + numeral(entree.qte).format('0,0') + ' cm²';
+                            s += '<br/><b>TDC après:</b> ' + numeral(this.y).format('0,0') + ' cm²';
+                            
+                            // Détails spécifiques selon le type
+                            if (entree.details) {
+                                s += '<br/><b>Détails:</b><br/>' + entree.details.replace(/<br>/g, ' | ');
+                            }
+                        } else {
+                            // Point de la courbe principale (solde)
+                            s += '<br/><span style="color:' + this.series.color + '">●</span> ' + this.series.name + ': <b>' + numeral(this.y).format('0,0') + ' cm²</b>';
+                        }
+                        
+                        return s;
+                    },
+                    shared: false,
+                    useHTML: true,
+                    style: {
+                        fontSize: '11px'
+                    }
+                },
+                plotOptions: {
+                    spline: {
+                        marker: { 
+                            enabled: true, 
+                            radius: 3,
+                            lineWidth: 1
+                        },
+                        lineWidth: 2,
+                        states: {
+                            hover: {
+                                lineWidth: 3
+                            }
+                        }
+                    },
+                    scatter: {
+                        marker: {
+                            radius: 5,
+                            lineWidth: 2
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Évolution TDC',
+                    data: donneesGraphique.solde,
+                    color: '#007bff',
+                    zIndex: 1
+                }, {
+                    name: 'Butin',
+                    type: 'scatter',
+                    data: donneesGraphique.butin,
+                    color: '#28a745',
+                    marker: {
+                        symbol: 'triangle',
+                        radius: 6
+                    },
+                    zIndex: 2
+                }, {
+                    name: 'Vol',
+                    type: 'scatter',
+                    data: donneesGraphique.vol,
+                    color: '#dc3545',
+                    marker: {
+                        symbol: 'triangle-down',
+                        radius: 6
+                    },
+                    zIndex: 2
+                }, {
+                    name: 'Chasse',
+                    type: 'scatter',
+                    data: donneesGraphique.chasse,
+                    color: '#20c997',
+                    marker: {
+                        symbol: 'diamond',
+                        radius: 6
+                    },
+                    zIndex: 2
+                }],
+                legend: {
+                    itemStyle: { color: couleurs.texte },
+                    itemHoverStyle: { color: couleurs.texte }
+                }
+            });
+        } catch (error) {
+            console.warn("Erreur lors de la création du graphique:", error);
+        }
     }
 
     /**
