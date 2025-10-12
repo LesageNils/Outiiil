@@ -82,10 +82,10 @@ class Historique
                     chaine.push(this.recupererDetailMessage(msg_id, cibleRebellion));
                 });
 
-                $.when.apply($, chaine).then(async () => {
+                $.when.apply($, chaine).then(() => {
                     if (Object.keys(this._tabHistoTdc).length > 0) {
                         // Récupérer les alliances pour toutes les entrées
-                        await this._recupererAlliances();
+                        this._recupererAlliances();
                     }
                     defer.resolve(this._tabHistoTdc);
                 });
@@ -242,7 +242,7 @@ class Historique
      * @private
      * @method _recupererAlliances
      */
-    async _recupererAlliances()
+    _recupererAlliances()
     {
         const promises = [];
         const entreesSansAlliance = [];
@@ -263,9 +263,10 @@ class Historique
         }
         
         if (promises.length > 0) {
-            await Promise.all(promises);
-            // Sauvegarder après avoir récupéré toutes les alliances
-            this._sauvegarderHistorique();
+            $.when.apply($, promises).then(() => {
+                // Sauvegarder après avoir récupéré toutes les alliances
+                this._sauvegarderHistorique();
+            });
         }
     }
 
@@ -378,11 +379,11 @@ class Historique
         // Trier par date (plus récent en premier)
         const entreesTriees = Object.values(historiqueComplet).sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        // Créer les filtres par type
-        html += this.creerFiltres(entreesTriees, couleurs);
-        
         // Graphique d'évolution du TDC
         html += this.creerGraphiqueEvolution(entreesTriees, couleurs);
+        
+        // Créer les filtres par type
+        html += this.creerFiltres(entreesTriees, couleurs);
         
         // Tableau avec colonnes alignées
         html += `<table id="tableau-historique" style="
@@ -517,7 +518,7 @@ class Historique
     }
 
     /**
-     * Crée le graphique d'évolution du TDC dans le temps
+     * Crée le graphique d'évolution du TDC
      * 
      * @method creerGraphiqueEvolution
      * @param {Array} entrees - Liste des entrées d'historique
@@ -756,10 +757,10 @@ class Historique
                 conversation: conversationId
             },
             dataType: 'html',
-            success: async (page) => {
+            success: (page) => {
+                console.log("Récupère le détail du message", msgId);
                 try {
-                    const details = await this.analyserDetailMessage(page, cibleRebellion);
-                    
+                    const details = this.analyserDetailMessage(page, cibleRebellion);
                     if (details && details.length > 0) {
                         // Ajouter les détails multiples avec leur ID unique
                         details.forEach((detail) => {
@@ -771,6 +772,7 @@ class Historique
                         });
                         
                         // Sauvegarder après avoir ajouté les détails
+                        console.log("Sauvegarde l'historique", this._tabHistoTdc);
                         this._sauvegarderHistorique();
                     }
                     defer.resolve();
@@ -796,15 +798,16 @@ class Historique
      * @param {String} cibleRebellion - Cible de la rébellion (si applicable)
      * @return {Promise<Array>} Promise avec le tableau des détails extraits
      */
-    async analyserDetailMessage(pageHtml, cibleRebellion = null)
+    analyserDetailMessage(pageHtml, cibleRebellion = null)
     {
         const details = [];
         const $page = $(pageHtml);
         
         // Chercher les sous-messages avec leur ID unique (format: message_XXXXX)
         const elements = $page.find('tr[id^="message_"]');
-        for (let i = 0; i < elements.length; i++) {
-            const $tr = $(elements[i]);
+        
+        elements.each((i, element) => {
+            const $tr = $(element);
             const messageId = $tr.attr('id'); // message_93254662, message_93254666, etc.
             
             // Extraire la date depuis le span
@@ -815,7 +818,7 @@ class Historique
             const messageContent = $tr.find('td.message').text().trim();
             
             if (messageContent && this.estMessageTDC(messageContent)) {
-                const detail = await this.extraireDetailMessage($tr, cibleRebellion);
+                const detail = this.extraireDetailMessage($tr, cibleRebellion);
                 if (detail) {
                     // Utiliser l'ID du sous-message comme clé unique
                     detail.messageId = messageId;
@@ -831,11 +834,10 @@ class Historique
                         detail.date = `${annee}-${mois}-${jour}T${heure}:${minute}+01:00`;
                     }
                     
-                    
                     details.push(detail);
                 }
             }
-        }
+        });
         
         return details;
     }
@@ -861,10 +863,25 @@ class Historique
             /vous a pris.*cm²/,
             /Vos chasseuses ont conquis/,
             /À présent, votre fourmilière est libre/,
-            /Les unités survivantes ont appris/
+            /Les unités survivantes ont appris/,
+            /Butin chez/,
+            /Vol par/,
+            /Chasse réussie/,
+            /Attaque échouée/,
+            /Attaque réussie/,
+            /Rébellion réussie/,
+            /pillé.*nourriture/,
+            /rapportent.*nourriture/
         ];
         
-        return patternsTDC.some(pattern => pattern.test(texte));
+        const isTDC = patternsTDC.some(pattern => pattern.test(texte));
+        
+        // Log pour déboguer
+        if (!isTDC && texte.length > 10) {
+            console.log("Message non reconnu comme TDC:", texte.substring(0, 100) + "...");
+        }
+        
+        return isTDC;
     }
 
     /**
@@ -873,9 +890,9 @@ class Historique
      * @method extraireDetailMessage
      * @param {jQuery} $tr - Élément TR du sous-message
      * @param {String} cibleRebellion - Cible de la rébellion (si applicable)
-     * @return {Promise<Object>} Promise avec le détail extrait
+     * @return {Object} Détail extrait
      */
-    async extraireDetailMessage($tr, cibleRebellion = null)
+    extraireDetailMessage($tr, cibleRebellion = null)
     {
         const detail = {
             type: "",
@@ -984,14 +1001,6 @@ class Historique
             const matchCible = messageText.match(/Ces terres appartenaient à\s+([^.]+)/);
             if (matchCible) {
                 detail.cible = matchCible[1].trim();
-                this._getInfosJoueur(detail.cible).then(infos => {
-                    if (infos && infos.Alliance) {
-                        detail.alliance = infos.Alliance;
-                        this._sauvegarderHistorique();
-                    }
-                }).catch(error => {
-                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
-                });
             }
         }
         
@@ -1003,14 +1012,6 @@ class Historique
             const $lienCible = $tr.find('td.message a[href*="Membre.php?Pseudo="]');
             if ($lienCible.length > 0) {
                 detail.cible = $lienCible.text().trim();
-                this._getInfosJoueur(detail.cible).then(infos => {
-                    if (infos && infos.Alliance) {
-                        detail.alliance = infos.Alliance;
-                        this._sauvegarderHistorique();
-                    }
-                }).catch(error => {
-                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
-                });
             }
             
             // Extraire la quantité de terrain
@@ -1092,14 +1093,6 @@ class Historique
             // Utiliser la cible de rébellion passée en paramètre (extraite du message principal)
             if (cibleRebellion) {
                 detail.cible = cibleRebellion;
-                this._getInfosJoueur(detail.cible).then(infos => {
-                    if (infos && infos.Alliance) {
-                        detail.alliance = infos.Alliance;
-                        this._sauvegarderHistorique();
-                    }
-                }).catch(error => {
-                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
-                });
             }
 
             detail.lieu = "Loge Impériale";
@@ -1175,7 +1168,7 @@ class Historique
     }
 
     /**
-     * Initialise les filtres et le graphique après insertion du HTML dans le DOM
+     * Initialise les filtres après insertion du HTML dans le DOM
      * 
      * @method initialiserFiltres
      */
