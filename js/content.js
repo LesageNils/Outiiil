@@ -250,8 +250,57 @@ const DATEPICKER_OPTION = {
                 console.warn("Impossible de charger les membres d'alliance:", error);
             });
 
+            // Chargement de l'historique TDC
+            window.historiqueGlobal = new Historique();
+            window.historiqueGlobal.analyserMessagerie().catch(error => {
+                console.warn("Impossible de charger l'historique TDC:", error);
+            });
+
             // Exposer les classes globalement
             window.Alliance = Alliance;
+            window.Historique = Historique;
+            
+            
+            // Fonction de test pour vérifier le parsing des messages
+            window.testHistoriqueParsing = function() {
+                const historique = new Historique();
+                const messagesTest = [
+                    "Attaque échouée contre Hugigigi : votre armée est morte dans la Loge Impériale",
+                    "Rebellion réussie contre Mandibules",
+                    "Butin chez Hugigigi : 3 543 265 cm²",
+                    "Attaque réussie contre Hugigigi : votre armée a franchi le Terrain de Chasse",
+                    "Vol par Hugigigi : 3 699 030 cm²",
+                    "Chasse réussie : vos chasseuses ont conquis 1 000 cm² en 1 expédition"
+                ];
+                
+                console.log("=== TEST PARSING HISTORIQUE ===");
+                messagesTest.forEach((msg, index) => {
+                    const detail = msg.split(" ");
+                    console.log(`Message ${index + 1}:`, msg);
+                    console.log("Détail:", detail);
+                    
+                    if (detail[0] === "Butin" || detail[0] === "Vol") {
+                        const terrain = parseInt(msg.split(" : ")[1].replace("cm²", "").replace(/ /g, ''));
+                        console.log("Type:", detail[0], "Quantité:", terrain, "Cible:", detail[2]);
+                    } else if (detail[0] === "Attaque" && detail[1] === "échouée") {
+                        const cible = msg.split(" contre ")[1].split(" : ")[0];
+                        const lieu = msg.split(" dans la ")[1] || msg.split(" dans le ")[1] || "";
+                        console.log("Type: Attaque échouée, Cible:", cible, "Lieu:", lieu);
+                    } else if (detail[0] === "Attaque" && detail[1] === "réussie") {
+                        const cible = msg.split(" contre ")[1].split(" : ")[0];
+                        const lieu = msg.split(" a franchi le ")[1] || msg.split(" a franchi la ")[1] || "";
+                        console.log("Type: Attaque réussie, Cible:", cible, "Lieu:", lieu);
+                    } else if (detail[0] === "Rebellion" && detail[1] === "réussie") {
+                        const cible = msg.split(" contre ")[1];
+                        console.log("Type: Rébellion réussie, Cible:", cible);
+                    } else if (detail[0] === "Chasse" && detail[1] === "réussie") {
+                        const terrain = parseInt(msg.split(" conquis ")[1].split(" cm²")[0].replace(/ /g, ''));
+                        const expeditions = parseInt(msg.split(" en ")[1].split(" expédition")[0]);
+                        console.log("Type: Chasse réussie, Quantité:", terrain, "Expéditions:", expeditions);
+                    }
+                    console.log("---");
+                });
+            };
             
             // Ajout des outils
             let boite = new Dock();
@@ -272,17 +321,12 @@ const DATEPICKER_OPTION = {
             }
 
             let uri = location.pathname, page = null;
+            console.log("uri:", uri);
             // Routing
             switch (true) {
                 case (uri == "/fourmiliere.php"):
                     page = new PageFourmiliere();
                     page.executer();
-                    break;
-                case (uri == "/alliance.php"):
-                    // Mise à jour des membres d'alliance depuis la page actuelle
-                    if (location.search.includes("Membres")) {
-                        Alliance.mettreAJourDepuisPage();
-                    }
                     break;
                 case (uri == "/Reine.php"):
                     page = new PageReine(boiteComptePlus);
@@ -352,26 +396,21 @@ const DATEPICKER_OPTION = {
             }
 
             //Ajout du menu zorgzzz
-            //$('#menu_horizontal').append('<li><a id="boutonZRG" class="boutonSansColonne" href="http://' + Utils.serveur + '.fourmizzz.fr/fourmiliere.php"><span style="background: url(http://i-conseil.net/zorgzzz/img/zrg.png) left center no-repeat; height: 26px; width: 24px; vertical-align: -7px; margin-right: 2px; display: inline-block; margin-top: 2px;"></span>ZRG</a></li>');
-            //$('#menu_horizontal #boutonAide').unwrap().remove();
-            $('#boutonAide').empty().append('<li><a id="boutonZRG" class="boutonSansColonne" href="http://' + Utils.serveur + '.fourmizzz.fr/fourmiliere.php"><span style="background: url(http://i-conseil.net/zorgzzz/img/zrg.png) left center no-repeat; height: 26px; width: 24px; vertical-align: -7px; margin-right: 2px; display: inline-block; margin-top: 2px;"></span>ZRG</a></li>');
+
+            $('#boutonAide').empty().append('<li><a id="boutonZRG" class="boutonSansColonne" href="http://' + Utils.serveur + '.fourmizzz.fr/fourmiliere.php"><span style="background: url(chrome-extension://' + chrome.runtime.id + '/images/zrg.png) left center no-repeat; height: 26px; width: 24px; vertical-align: -7px; margin-right: 2px; display: inline-block; margin-top: 2px;"></span>ZRG</a></li>');
             var zrg_contenu_html = '<li><a class="boutonMaFourmiliere" href="fourmiliere.php"><span></span>Synthese</a></li>'
             
             //tableau vigipirate
             zrg_contenu_html += "<table id='vigipirate' style='width:98%; border-collapse: collapse; border-top:solid 3px white; margin: 3px; background:#e6e6e6; font-size:11px;'>";
             zrg_contenu_html += "<tr  style='background:#525544; color:white;'><th>VIGIPIRATE</th><th align=right>TDC</th><th align=right>EVOLUTION</th><th align=right>SENS</th></tr>";
 
-            //historique tdc
-            //zrg_contenu_html += "<table id='histotdc' style='width:98%; border-collapse: collapse; border-top:solid 3px white;  margin: 3px; background:#e6e6e6; font-size:11px;'>";
-            //zrg_contenu_html += "<tr  style='background:#525544; color:white;'><th>HISTO TDC</th><th align=right>BUTIN</th><th align=right>VOL</th><th align=right>SOLDE</th></tr>";
-            //zrg_contenu_html += "</table>";
             $('#menuAide').empty().append(zrg_contenu_html);
 
             //$('ul#menu_horizontal>li').css({width:'14%'});
             //$(".menu_colonne")
             //$('#menu').append('<ul id="menuAide" class="menu_colonne"><li><a class="boutonReine" href="Reine.php"><span></span>Reine</a></li></ul>');
 
-            // Redimmensionement de tous les menus
+
 
             $('#menuZRG,#boutonZRG')
                 .mouseenter(function () {

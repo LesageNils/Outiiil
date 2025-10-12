@@ -161,6 +161,7 @@ class PageForum
     executer()
     {
         // si le forum est deja chargé lance le traitement
+        console.log("executer");
         if($("#cat_forum").length) this.traitementSection("#alliance");
         // Récupération des données du forum pour communiquer.
         let observer = new MutationObserver((mutationsList) => {
@@ -256,6 +257,7 @@ class PageForum
     {
         // il faut etre chef pour preparer le fofo
         if($("img[src='images/icone/outil.gif']").length && !$("#o_afficheMenuUtilitaire").length){
+            console.log("afficheMenuUtilitaire");
             $("#cat_forum").prepend(`<span id="o_afficheMenuUtilitaire" class="o_forumOption categorie_forum"><img src="${IMG_OUTIIIL}" alt="outiiil"/></span>
                 <span id="o_menuUtilitaire" class="ligne_paire o_prepareUtilitaire">
                     <a href="#" id="o_creerUtilitaire">» Préparer le forum pour un SDC</a><br/>

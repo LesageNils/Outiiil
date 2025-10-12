@@ -15,6 +15,8 @@ class PageFourmiliere {
         $("center").empty();
         $("center").append("<h1>Synthèse de la fourmiliere</h1>");
 
+        // Créer le système d'onglets
+        this.creerOnglets();
 
         this.afficherIndicateurChargement();
 
@@ -46,6 +48,126 @@ class PageFourmiliere {
     // ========================================
     // MÉTHODES D'AFFICHAGE
     // ========================================
+
+    /**
+     * Crée le système d'onglets pour la page fourmilière
+     */
+    creerOnglets() {
+        const couleurs = this.getCouleursTheme();
+        
+        const htmlOnglets = `
+            <div style="margin: 10px 0; border-bottom: 2px solid ${couleurs.bordure};">
+                <div style="display: flex; gap: 0;">
+                    <button id="onglet-synthese" class="onglet-btn active" style="
+                        background: ${couleurs.fond};
+                        border: 1px solid ${couleurs.bordure};
+                        border-bottom: none;
+                        padding: 10px 20px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        color: ${couleurs.texte};
+                        border-radius: 5px 5px 0 0;
+                    ">📊 Synthèse</button>
+                    <button id="onglet-historique" class="onglet-btn" style="
+                        background: ${couleurs.alternance};
+                        border: 1px solid ${couleurs.bordure};
+                        border-bottom: none;
+                        padding: 10px 20px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        color: ${couleurs.texte};
+                        border-radius: 5px 5px 0 0;
+                    ">📈 Historique TDC</button>
+                </div>
+            </div>
+            <div id="contenu-onglets" style="
+                background: ${couleurs.fond};
+                border: 1px solid ${couleurs.bordure};
+                border-top: none;
+                padding: 15px;
+                min-height: 400px;
+            ">
+                <div id="contenu-synthese"></div>
+                <div id="contenu-historique" style="display: none;"></div>
+            </div>
+        `;
+        
+        $("center").append(htmlOnglets);
+        
+        // Gestion des clics sur les onglets
+        $("#onglet-synthese").click(() => this.afficherOnglet('synthese'));
+        $("#onglet-historique").click(() => this.afficherOnglet('historique'));
+    }
+
+    /**
+     * Affiche l'onglet sélectionné
+     */
+    afficherOnglet(onglet) {
+        const couleurs = this.getCouleursTheme();
+        
+        // Masquer tous les contenus
+        $("#contenu-synthese, #contenu-historique").hide();
+        
+        // Désactiver tous les onglets
+        $(".onglet-btn").css({
+            background: couleurs.alternance,
+            borderBottom: "1px solid " + couleurs.bordure
+        });
+        
+        if (onglet === 'synthese') {
+            $("#contenu-synthese").show();
+            $("#onglet-synthese").css({
+                background: couleurs.fond,
+                borderBottom: "none"
+            });
+        } else if (onglet === 'historique') {
+            $("#contenu-historique").show();
+            $("#onglet-historique").css({
+                background: couleurs.fond,
+                borderBottom: "none"
+            });
+            this.afficherHistoriqueTDC();
+        }
+    }
+
+    /**
+     * Affiche l'historique TDC dans l'onglet dédié
+     */
+    afficherHistoriqueTDC() {
+        if (typeof Historique !== 'undefined') {
+            // Utiliser l'instance globale d'historique
+            const historique = window.historiqueGlobal || new Historique();
+            
+            // Charger les données existantes dans _tabHistoTdc pour l'affichage
+            const donneesExistantes = historique.chargerHistorique();
+            historique._tabHistoTdc = { ...historique._tabHistoTdc, ...donneesExistantes };
+            
+            const htmlHistorique = historique.genererHTML();
+            $("#contenu-historique").html(htmlHistorique);
+            
+            // Récupérer les alliances manquantes
+            historique._recupererAlliances();
+            
+            // Initialiser les filtres après insertion du HTML
+            setTimeout(() => {
+                historique.initialiserFiltres();
+            }, 100);
+        } else {
+            $("#contenu-historique").html(`
+                <div style="text-align: center; padding: 20px; color: #6c757d;">
+                    <p>Chargement de l'historique TDC...</p>
+                    <button onclick="location.reload()" style="
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Actualiser</button>
+                </div>
+            `);
+        }
+    }
 
     /**
      * Récupère les couleurs du thème fourmizzz
@@ -233,7 +355,7 @@ class PageFourmiliere {
             </div>
         </div>`;
 
-        $("center").append(html);
+        $("#contenu-synthese").html(html);
         this.afficherMessageDonnees();
     }
 

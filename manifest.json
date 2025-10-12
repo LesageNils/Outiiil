@@ -36,6 +36,7 @@
 			"js/class/Combat.js",
 			"js/class/Commande.js",
 			"js/class/Convoi.js",
+			"js/class/Historique.js",
 			"js/class/Joueur.js",
 			"js/class/Parametre.js",
 			"js/class/Traceur.js",

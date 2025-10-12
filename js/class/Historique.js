@@ -1,0 +1,1085 @@
+/*
+ * Historique.js
+ * Adaptation du système d'historique TDC pour stockage local
+ **********************************************************************/
+
+/**
+ * Classe pour gérer l'historique des TDC (Terrain de Chasse)
+ * Stocke les données dans localStorage au lieu du forum
+ *
+ * @class Historique
+ */
+class Historique
+{
+    constructor()
+    {
+        /**
+         * Tableau des données d'historique TDC
+         */
+        this._tabHistoTdc = {};
+        
+        /**
+         * Constantes pour les mois
+         */
+        this._MOIS = {
+            "janv.": 0, "févr.": 1, "mars": 2, "avr.": 3, "mai": 4, "juin": 5,
+            "juil.": 6, "août": 7, "sept.": 8, "oct.": 9, "nov.": 10, "déc.": 11
+        };
+        
+        /**
+         * Jours de la semaine
+         */
+        this._JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+    }
+
+    /**
+     * Analyse la messagerie pour récupérer les données TDC
+     * 
+     * @method analyserMessagerie
+     * @return {Promise} Promise résolue avec les données récupérées
+     */
+    analyserMessagerie()
+    {
+        const defer = $.Deferred();
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
+            type: 'GET',
+            dataType: 'html',
+            success: (page) => {
+                this._tabHistoTdc = {};
+                const chaine = [];
+                let lst_debug = "";
+
+                $(page).find('#table_liste_conversations tr[data-type="Combats"], #table_liste_conversations tr[data-type="Chasses"]').find('.td_objet').each((idx, ligne) => {
+                    // ID MESSAGE
+                    const msg_id = 'id_' + $(ligne).parent().attr('id').replace("conversation_", "");
+                    
+                    // Extraire la date depuis le message principal
+                    const msg_date = $(ligne).find("span").text().split(" ");
+                    let dateMessage = new Date().toISOString();
+                    
+                    // Parser la date du message principal
+                    if (msg_date.length > 0) {
+                        const dateParsed = this._parserDate(msg_date);
+                        if (dateParsed) {
+                            dateMessage = dateParsed;
+                        }
+                    }
+                    
+                    // Extraire les informations depuis le message principal pour la rébellion
+                    const messageObjet = $(ligne).find("a").text();
+                    let cibleRebellion = null;
+                    
+                    if (messageObjet.includes("Rebellion réussie contre")) {
+                        const matchCible = messageObjet.match(/Rebellion réussie contre\s+([^.]+)/);
+                        if (matchCible) {
+                            cibleRebellion = matchCible[1].trim();
+                        }
+                    }
+                    
+                    // Déclencher la récupération des détails pour tous les messages
+                    chaine.push(this.recupererDetailMessage(msg_id, cibleRebellion));
+                });
+
+                $.when.apply($, chaine).then(async () => {
+                    if (Object.keys(this._tabHistoTdc).length > 0) {
+                        // Récupérer les alliances pour toutes les entrées
+                        await this._recupererAlliances();
+                        console.log("Historique TDC mis à jour:", Object.keys(this._tabHistoTdc).length, "entrées");
+                    }
+                    defer.resolve(this._tabHistoTdc);
+                });
+            },
+            error: (xhr, status, error) => {
+                console.warn("Erreur lors de l'analyse de la messagerie:", error);
+                defer.reject(error);
+            }
+        });
+        
+        return defer.promise();
+    }
+
+    /**
+     * Parse une date à partir du format Fourmizzz
+     * 
+     * @private
+     * @method _parserDate
+     * @param {Array} msg_date - Tableau des éléments de date
+     * @return {String} Date formatée YYYY-MM-DD HH:mm
+     */
+    _parserDate(msg_date)
+    {
+        let c_annee = new Date().getFullYear();
+        let c_mois = new Date().getMonth() + 1; // 1-12 pour l'affichage
+        let c_jour = new Date().getDate();
+        let C_nomJour = "";
+        let c_heure = "";
+
+        switch (msg_date.length) {
+            case 3:
+                c_jour = msg_date[0];
+                c_mois = parseInt(this._MOIS[msg_date[1]]) + 1; // +1 car _MOIS est 0-11, on veut 1-12
+                c_heure = msg_date[2].replace("h", ":");
+                break;
+            case 2:
+                c_jour = msg_date[0];
+                c_heure = msg_date[1].replace("h", ":");
+                // Pour les messages sans mois explicite, on garde le mois actuel
+                break;
+            case 1:
+                c_heure = msg_date[0].replace("h", ":");
+                // Pour les messages sans jour ni mois, on garde la date actuelle
+                break;
+        }
+
+        if (this._JOURS.includes(c_jour)) {
+            const dateCalculee = this._getLastDayOccurence(c_jour);
+            c_jour = dateCalculee.getDate();
+            c_mois = dateCalculee.getMonth() + 1; // +1 car getMonth() retourne 0-11
+            c_annee = dateCalculee.getFullYear();
+        }
+        
+        if (c_jour === "hier") {
+            const hier = new Date();
+            hier.setDate(hier.getDate() - 1);
+            c_jour = hier.getDate();
+            c_mois = hier.getMonth() + 1; // +1 car getMonth() retourne 0-11
+            c_annee = hier.getFullYear();
+        }
+        
+        if (c_jour < 10) {
+            c_jour = '0' + c_jour;
+        }
+        if (c_mois < 10) {
+            c_mois = '0' + c_mois;
+        }
+        
+        return c_annee + '-' + c_mois + '-' + c_jour + "T" + c_heure + "+01:00";
+    }
+
+    /**
+     * Récupère les informations d'un joueur
+     * 
+     * @private
+     * @method _getInfosJoueur
+     * @param {String} pseudo - Pseudo du joueur
+     * @return {Promise} Promise avec les infos du joueur
+     */
+    _getInfosJoueur(pseudo)
+    {
+        const defer = $.Deferred();
+        
+        console.log("Récupération de l'alliance pour:", pseudo);
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php`,
+            type: 'GET',
+            data: { Pseudo: pseudo },
+            dataType: 'html',
+            success: (page) => {
+                const alliance = $(page).find('td:contains("Alliance")').next().text().trim();
+                console.log("Alliance trouvée pour", pseudo, ":", alliance);
+                defer.resolve({ Alliance: alliance });
+            },
+            error: (xhr, status, error) => {
+                console.warn("Erreur lors de la récupération de l'alliance pour", pseudo, ":", error);
+                defer.resolve({ Alliance: "" });
+            }
+        });
+        
+        return defer.promise();
+    }
+
+    /**
+     * Calcule la dernière occurrence d'un jour de la semaine
+     * 
+     * @private
+     * @method _getLastDayOccurence
+     * @param {String} jour - Jour de la semaine
+     * @return {Date} Date de la dernière occurrence
+     */
+    _getLastDayOccurence(jour)
+    {
+        const joursIndex = this._JOURS.indexOf(jour);
+        const aujourdhui = new Date();
+        const jourActuel = aujourdhui.getDay();
+        const diff = (jourActuel - joursIndex + 7) % 7;
+        
+        const resultat = new Date(aujourdhui);
+        resultat.setDate(aujourdhui.getDate() - diff);
+        return resultat;
+    }
+
+    /**
+     * Sauvegarde l'historique dans localStorage
+     * 
+     * @private
+     * @method _sauvegarderHistorique
+     */
+    _sauvegarderHistorique()
+    {
+        try {
+            // Récupérer les données existantes
+            const dataExistantes = JSON.parse(localStorage.getItem("outiiil_historique")) || {};
+            
+            // Fusionner avec les nouvelles données
+            const dataFinale = {
+                ...dataExistantes,
+                ...this._tabHistoTdc,
+                timestamp: new Date().toISOString(),
+                serveur: Utils.serveur
+            };
+            
+            localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
+            console.log("Historique TDC sauvegardé dans localStorage");
+            
+            // Rafraîchir l'affichage si on est sur l'onglet historique
+            this._rafraichirAffichage();
+        } catch (error) {
+            console.warn("Erreur lors de la sauvegarde de l'historique:", error);
+        }
+    }
+
+    /**
+     * Récupère les alliances pour toutes les entrées qui ont une cible
+     * 
+     * @private
+     * @method _recupererAlliances
+     */
+    async _recupererAlliances()
+    {
+        const promises = [];
+        const entreesSansAlliance = [];
+        
+        for (const [msgId, entree] of Object.entries(this._tabHistoTdc)) {
+            if (entree.cible && !entree.alliance) {
+                entreesSansAlliance.push({ msgId, cible: entree.cible });
+                promises.push(
+                    this._getInfosJoueur(entree.cible).then(infos => {
+                        if (infos && infos.Alliance) {
+                            this._tabHistoTdc[msgId].alliance = infos.Alliance;
+                            console.log("Alliance mise à jour pour", entree.cible, ":", infos.Alliance);
+                        }
+                    }).catch(error => {
+                        console.warn("Erreur lors de la récupération de l'alliance pour", entree.cible, ":", error);
+                    })
+                );
+            }
+        }
+        
+        console.log("Récupération des alliances pour", entreesSansAlliance.length, "entrées:", entreesSansAlliance);
+        
+        if (promises.length > 0) {
+            await Promise.all(promises);
+            // Sauvegarder après avoir récupéré toutes les alliances
+            this._sauvegarderHistorique();
+        }
+    }
+
+    /**
+     * Rafraîchit l'affichage de l'historique TDC
+     * 
+     * @private
+     * @method _rafraichirAffichage
+     */
+    _rafraichirAffichage()
+    {
+        // Vérifier si l'onglet historique est actif
+        if ($("#contenu-historique").is(":visible")) {
+            // Utiliser l'instance globale pour le rafraîchissement
+            const historique = window.historiqueGlobal || this;
+            const htmlHistorique = historique.genererHTML();
+            $("#contenu-historique").html(htmlHistorique);
+            
+            // Réinitialiser les filtres
+            setTimeout(() => {
+                historique.initialiserFiltres();
+            }, 100);
+        }
+    }
+
+    /**
+     * Charge l'historique depuis localStorage
+     * 
+     * @method chargerHistorique
+     * @return {Object} Données d'historique
+     */
+    chargerHistorique()
+    {
+        try {
+            const data = JSON.parse(localStorage.getItem("outiiil_historique")) || {};
+            // Retirer les métadonnées pour ne garder que les données TDC
+            const { timestamp, serveur, ...historique } = data;
+            return historique;
+        } catch (error) {
+            console.warn("Erreur lors du chargement de l'historique:", error);
+            return {};
+        }
+    }
+
+    /**
+     * Génère le HTML pour l'affichage de l'historique TDC
+     * 
+     * @method genererHTML
+     * @return {String} HTML de l'historique
+     */
+    genererHTML()
+    {
+        // Combiner les données de localStorage avec celles en cours de traitement
+        const historiqueLocalStorage = this.chargerHistorique();
+        const historiqueComplet = { ...historiqueLocalStorage, ...this._tabHistoTdc };
+        
+        let html = `<div id='histotdc' style='width:95%; margin: 3px; background:#f8f9fa; font-size:11px; padding: 8px; border-radius: 4px; border: 1px solid #dee2e6;'>`;
+        
+        // Trier par date (plus récent en premier)
+        const entreesTriees = Object.values(historiqueComplet).sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Créer les filtres par type
+        html += this.creerFiltres(entreesTriees);
+        
+        // Tableau avec colonnes alignées
+        html += `<table id="tableau-historique" style="
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        ">`;
+        
+        // En-tête du tableau
+        html += `<thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 12%;">Type</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Cible</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Alliance</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Lieu</th>
+                <th style="padding: 10px; text-align: left; font-size: 11px; font-weight: bold; color: #495057; width: 20%;">Détails</th>
+                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: #495057; width: 8%;">Quantité</th>
+                <th style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold; color: #495057; width: 15%;">Date</th>
+            </tr>
+        </thead>
+        <tbody>`;
+        
+        entreesTriees.forEach((entree, index) => {
+            let couleurTexte = "";
+            let affichageQte = "";
+            let affichageLieu = "";
+            
+            // Couleurs minimales - seulement pour les cas pertinents
+            switch(entree.type) {
+                case "Butin":
+                    couleurTexte = "#28a745"; // Vert pour gain
+                    affichageQte = entree.qte.toLocaleString() + " cm²";
+                    break;
+                case "Vol":
+                    couleurTexte = "#dc3545"; // Rouge pour perte
+                    affichageQte = entree.qte.toLocaleString() + " cm²";
+                    break;
+                case "Attaque réussie":
+                    couleurTexte = "#007bff"; // Bleu pour succès
+                    affichageQte = "✓";
+                    affichageLieu = entree.lieu || "";
+                    break;
+                case "Attaque échouée":
+                    couleurTexte = "#dc3545"; // Rouge pour échec
+                    affichageQte = "✗";
+                    affichageLieu = entree.lieu || "";
+                    break;
+                case "Rébellion réussie":
+                    couleurTexte = "#6f42c1"; // Violet pour rébellion
+                    affichageQte = "✓";
+                    break;
+                case "Chasse réussie":
+                    couleurTexte = "#20c997"; // Vert turquoise pour chasse
+                    affichageQte = entree.qte.toLocaleString() + " cm²";
+                    if (entree.expeditions) {
+                        affichageQte += ` (${entree.expeditions} exp.)`;
+                    }
+                    affichageLieu = entree.lieu || "";
+                    break;
+                default:
+                    couleurTexte = "#6c757d";
+                    affichageQte = entree.qte || "";
+            }
+            
+            // Ligne du tableau
+            html += `<tr class="ligne-historique" data-type="${entree.type}" style="
+                border-bottom: 1px solid #dee2e6;
+                transition: background-color 0.2s;
+            " onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">`;
+            
+            // Type
+            html += `<td style="padding: 8px; font-size: 11px;">
+                <strong style="color: ${couleurTexte};">${entree.type}</strong>
+            </td>`;
+            
+            // Cible
+            html += `<td style="padding: 8px; font-size: 11px; font-weight: bold;">
+                ${entree.cible}
+            </td>`;
+            
+            // Alliance
+            html += `<td style="padding: 8px; font-size: 10px; color: #6c757d;">
+                ${entree.alliance || '-'}
+            </td>`;
+            
+            // Lieu
+            html += `<td style="padding: 8px; font-size: 10px; color: #6c757d;">
+                ${affichageLieu || '-'}
+            </td>`;
+            
+            // Détails
+            html += `<td style="padding: 8px; font-size: 9px; color: #6c757d;">
+                ${this.genererDetailsAffichage(entree)}
+            </td>`;
+            
+            // Quantité
+            html += `<td style="padding: 8px; font-size: 11px; text-align: right; font-weight: bold; color: ${couleurTexte};">
+                ${affichageQte || '-'}
+            </td>`;
+            
+            // Date
+            html += `<td style="padding: 8px; font-size: 10px; text-align: right; color: #6c757d;">
+                ${Utils.formaterDateFrancaise(entree.date)}
+            </td>`;
+            
+            html += `</tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        
+        // Résumé compact en une seule ligne
+        const stats = this.getStatistiques();
+        html += `<div style="font-size: 10px; color: #6c757d; text-align: center; padding: 5px; border-top: 1px solid #dee2e6; margin-top: 8px;">
+            <strong>${stats.totalEntrees} événements</strong> | 
+            Butin: <span style="color: #28a745;">${stats.totalButin.toLocaleString()} cm²</span> | 
+            Vol: <span style="color: #dc3545;">${stats.totalVol.toLocaleString()} cm²</span> | 
+            Chasse: <span style="color: #20c997;">${stats.totalChasse.toLocaleString()} cm²</span> | 
+            Solde: <span style="color: ${stats.soldeTotal >= 0 ? '#28a745' : '#dc3545'};">${stats.soldeTotal.toLocaleString()} cm²</span> | 
+            Attaques: <span style="color: #007bff;">${stats.attaquesReussies}/${stats.attaquesEchouees}</span> | 
+            Rébellions: <span style="color: #6f42c1;">${stats.rebellionsReussies}</span> | 
+            Chasses: <span style="color: #20c997;">${stats.chassesReussies}</span>
+        </div>`;
+        
+        html += `</div>`;
+        return html;
+    }
+
+    /**
+     * Crée les filtres par type d'événement
+     * 
+     * @method creerFiltres
+     * @param {Array} entrees - Liste des entrées d'historique
+     * @return {String} HTML des filtres
+     */
+    creerFiltres(entrees)
+    {
+        // Compter les événements par type
+        const compteurs = {};
+        entrees.forEach(entree => {
+            compteurs[entree.type] = (compteurs[entree.type] || 0) + 1;
+        });
+        
+        const types = ["Tous", "Butin", "Vol", "Attaque réussie", "Attaque échouée", "Rébellion réussie", "Chasse réussie"];
+        const couleurs = {
+            "Tous": "#6c757d",
+            "Butin": "#28a745",
+            "Vol": "#dc3545", 
+            "Attaque réussie": "#007bff",
+            "Attaque échouée": "#dc3545",
+            "Rébellion réussie": "#6f42c1",
+            "Chasse réussie": "#20c997"
+        };
+        
+        let html = `<div style="margin-bottom: 10px; padding: 8px; background: #e9ecef; border-radius: 4px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+                <span style="font-size: 11px; font-weight: bold; margin-right: 10px;">Filtrer par type:</span>`;
+        
+        types.forEach(type => {
+            const count = type === "Tous" ? entrees.length : (compteurs[type] || 0);
+            const couleur = couleurs[type];
+            
+            html += `<button class="filtre-btn" data-type="${type}" style="
+                background: ${couleur};
+                color: white;
+                border: none;
+                padding: 4px 8px;
+                border-radius: 3px;
+                font-size: 10px;
+                cursor: pointer;
+                opacity: 1;
+                transition: opacity 0.2s;
+            ">${type} (${count})</button>`;
+        });
+        
+        html += `</div></div>`;
+        
+        // Ajouter le CSS pour les filtres
+        html += `<style>
+            .filtre-btn:hover { opacity: 0.8 !important; }
+            .filtre-btn.inactive { opacity: 0.4 !important; }
+        </style>`;
+        
+        
+        return html;
+    }
+
+
+
+    /**
+     * Récupère le détail d'un message spécifique
+     * 
+     * @method recupererDetailMessage
+     * @param {String} msgId - ID du message
+     * @param {String} cibleRebellion - Cible de la rébellion (si applicable)
+     * @return {Promise} Promise de récupération du détail
+     */
+    recupererDetailMessage(msgId, cibleRebellion = null)
+    {
+        const defer = $.Deferred();
+        const conversationId = msgId.replace('id_', '');
+        
+        $.ajax({
+            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
+            type: 'POST',
+            data: {
+                traitement: 'afficher',
+                conversation: conversationId
+            },
+            dataType: 'html',
+            success: async (page) => {
+                try {
+                    const details = await this.analyserDetailMessage(page, cibleRebellion);
+                    
+                    if (details && details.length > 0) {
+                        // Ajouter les détails multiples avec leur ID unique
+                        details.forEach((detail) => {
+                            const newMsgId = detail.messageId || `${msgId}_detail_${Date.now()}`;
+                            this._tabHistoTdc[newMsgId] = {
+                                ...detail,
+                                detailsRecuperes: true
+                            };
+                        });
+                        
+                        // Sauvegarder après avoir ajouté les détails
+                        this._sauvegarderHistorique();
+                    }
+                    defer.resolve();
+                } catch (error) {
+                    console.warn("Erreur lors de l'analyse du détail:", error);
+                    defer.resolve();
+                }
+            },
+            error: (xhr, status, error) => {
+                console.warn("Erreur AJAX pour le message", msgId, ":", error);
+                defer.resolve();
+            }
+        });
+        
+        return defer.promise();
+    }
+
+    /**
+     * Analyse le contenu détaillé d'un message
+     * 
+     * @method analyserDetailMessage
+     * @param {String} pageHtml - HTML de la page de détail
+     * @param {String} cibleRebellion - Cible de la rébellion (si applicable)
+     * @return {Promise<Array>} Promise avec le tableau des détails extraits
+     */
+    async analyserDetailMessage(pageHtml, cibleRebellion = null)
+    {
+        const details = [];
+        const $page = $(pageHtml);
+        
+        // Chercher les sous-messages avec leur ID unique (format: message_XXXXX)
+        const elements = $page.find('tr[id^="message_"]');
+        for (let i = 0; i < elements.length; i++) {
+            const $tr = $(elements[i]);
+            const messageId = $tr.attr('id'); // message_93254662, message_93254666, etc.
+            
+            // Extraire la date depuis le span
+            const dateSpan = $tr.find('td.expe span span').text().trim();
+            const matchDate = dateSpan.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})\s+à\s+(\d{1,2})h(\d{2})/);
+            
+            // Extraire le contenu du message
+            const messageContent = $tr.find('td.message').text().trim();
+            
+            if (messageContent && this.estMessageTDC(messageContent)) {
+                const detail = await this.extraireDetailMessage($tr, cibleRebellion);
+                if (detail) {
+                    // Utiliser l'ID du sous-message comme clé unique
+                    detail.messageId = messageId;
+                    
+                    // Utiliser la date extraite du sous-message si disponible
+                    if (matchDate) {
+                        const jour = matchDate[1].padStart(2, '0');
+                        const mois = matchDate[2].padStart(2, '0');
+                        const annee = '20' + matchDate[3];
+                        const heure = matchDate[4].padStart(2, '0');
+                        const minute = matchDate[5];
+                        
+                        detail.date = `${annee}-${mois}-${jour}T${heure}:${minute}+01:00`;
+                    }
+                    
+                    
+                    details.push(detail);
+                }
+            }
+        }
+        
+        return details;
+    }
+
+
+    /**
+     * Vérifie si un texte correspond à un message TDC
+     * 
+     * @method estMessageTDC
+     * @param {String} texte - Texte à analyser
+     * @return {Boolean} True si c'est un message TDC
+     */
+    estMessageTDC(texte)
+    {
+        const patternsTDC = [
+            /Vous attaquez/,
+            /Troupes en attaque/,
+            /Troupes en défense/,
+            /Vous infligez.*dégâts/,
+            /Vous avez gagné cette bataille/,
+            /Vos troupes ont échoué/,
+            /Vos fourmis ont conquis.*cm²/,
+            /vous a pris.*cm²/,
+            /Vos chasseuses ont conquis/,
+            /À présent, votre fourmilière est libre/,
+            /Les unités survivantes ont appris/
+        ];
+        
+        return patternsTDC.some(pattern => pattern.test(texte));
+    }
+
+    /**
+     * Extrait les détails d'un message TDC
+     * 
+     * @method extraireDetailMessage
+     * @param {jQuery} $tr - Élément TR du sous-message
+     * @param {String} cibleRebellion - Cible de la rébellion (si applicable)
+     * @return {Promise<Object>} Promise avec le détail extrait
+     */
+    async extraireDetailMessage($tr, cibleRebellion = null)
+    {
+        const detail = {
+            type: "",
+            cible: "",
+            alliance: "",
+            date: new Date().toISOString(), // Date par défaut, sera remplacée par la date extraite
+            qte: 0,
+            lieu: "",
+            expeditions: 0
+        };
+
+        // Récupérer le contenu HTML et texte du message
+        const messageHTML = $tr.find('td.message').html();
+        const messageText = $tr.find('td.message').text().trim();
+        
+        // Détecter le type de sous-message et extraire les informations spécifiques
+        
+        // 1. ATTAQUE ÉCHOUÉE
+        if (messageText.includes("Vous attaquez") && messageText.includes("Vos troupes ont échoué")) {
+            detail.type = "Attaque échouée";
+            detail.resultat = "échec";
+            
+            // Extraire les troupes en attaque
+            const matchAttaque = messageText.match(/Troupes en attaque\s*:\s*([^.]+)/);
+            if (matchAttaque) {
+                detail.troupesAttaque = matchAttaque[1].trim();
+            }
+            
+            // Extraire les troupes en défense
+            const matchDefense = messageText.match(/Troupes en défense\s*:\s*([^.]+)/);
+            if (matchDefense) {
+                detail.troupesDefense = matchDefense[1].trim();
+            }
+            
+            // Extraire cible et lieu depuis le HTML
+            const $lienCible = $tr.find('td.message a[href*="Membre.php?Pseudo="]');
+            if ($lienCible.length > 0) {
+                detail.cible = $lienCible.text().trim();
+                
+            }
+            
+            // Extraire le lieu depuis le HTML
+            if (messageHTML && messageHTML.includes("Vous attaquez")) {
+                const matchLieu = messageHTML.match(/Vous attaquez\s+(?:la\s+|le\s+)?([^<]+?)\s+de\s+<a[^>]*>([^<]+)<\/a>/);
+                if (matchLieu) {
+                    detail.lieu = matchLieu[1].trim();
+                }
+            }
+        }
+        
+        // 2. ATTAQUE RÉUSSIE
+        else if (messageText.includes("Vous attaquez") && messageText.includes("Vous avez gagné cette bataille")) {
+            detail.type = "Attaque réussie";
+            detail.resultat = "réussite";
+            
+            // Extraire les troupes
+            const matchAttaque = messageText.match(/Troupes en attaque\s*:\s*([^.]+)/);
+            if (matchAttaque) {
+                detail.troupesAttaque = matchAttaque[1].trim();
+            }
+            
+            const matchDefense = messageText.match(/Troupes en défense\s*:\s*([^.]+)/);
+            if (matchDefense) {
+                detail.troupesDefense = matchDefense[1].trim();
+            }
+            
+            // Extraire les trophées
+            const matchTrophees = messageText.match(/(\d+)\s+trophées?\s+volés?/);
+            if (matchTrophees) {
+                detail.trophees = parseInt(matchTrophees[1]);
+            }
+            
+            // Extraire les évolutions
+            const matchEvolutions = messageText.match(/(\d+)\s+([^sont]+)\s+sont devenues?\s+([^.]+)/g);
+            if (matchEvolutions) {
+                detail.evolutions = matchEvolutions.map(evo => evo.trim());
+            }
+            
+            // Extraire cible et lieu depuis le HTML
+            const $lienCible = $tr.find('td.message a[href*="Membre.php?Pseudo="]');
+            if ($lienCible.length > 0) {
+                detail.cible = $lienCible.text().trim();
+                
+            }
+            
+            // Extraire le lieu depuis le HTML
+            if (messageHTML && messageHTML.includes("Vous attaquez")) {
+                const matchLieu = messageHTML.match(/Vous attaquez\s+(?:la\s+|le\s+)?([^<]+?)\s+de\s+<a[^>]*>([^<]+)<\/a>/);
+                if (matchLieu) {
+                    detail.lieu = matchLieu[1].trim();
+                }
+            }
+        }
+        
+        // 3. BUTIN
+        else if (messageText.includes("Vos fourmis ont conquis") && messageText.includes("lors de leur dernière bataille")) {
+            detail.type = "Butin";
+            
+            // Extraire la quantité de terrain
+            const matchTerrain = messageText.match(/Vos fourmis ont conquis\s+([\d\s]+)\s+cm²/);
+            if (matchTerrain) {
+                detail.qte = parseInt(matchTerrain[1].replace(/\s/g, ''));
+            }
+            
+            // Extraire la cible
+            const matchCible = messageText.match(/Ces terres appartenaient à\s+([^.]+)/);
+            if (matchCible) {
+                detail.cible = matchCible[1].trim();
+                this._getInfosJoueur(detail.cible).then(infos => {
+                    if (infos && infos.Alliance) {
+                        detail.alliance = infos.Alliance;
+                        this._sauvegarderHistorique();
+                    }
+                }).catch(error => {
+                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
+                });
+            }
+        }
+        
+        // 4. VOL
+        else if (messageText.includes("vous a pris") && messageText.includes("lors de sa dernière attaque")) {
+            detail.type = "Vol";
+            
+            // Extraire la cible depuis le HTML (plus fiable)
+            const $lienCible = $tr.find('td.message a[href*="Membre.php?Pseudo="]');
+            if ($lienCible.length > 0) {
+                detail.cible = $lienCible.text().trim();
+                this._getInfosJoueur(detail.cible).then(infos => {
+                    if (infos && infos.Alliance) {
+                        detail.alliance = infos.Alliance;
+                        this._sauvegarderHistorique();
+                    }
+                }).catch(error => {
+                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
+                });
+            }
+            
+            // Extraire la quantité de terrain
+            const matchTerrain = messageText.match(/vous a pris\s+([\d\s]+)\s+cm²/);
+            if (matchTerrain) {
+                detail.qte = parseInt(matchTerrain[1].replace(/\s/g, ''));
+            }
+        }
+        
+        // 5. CHASSE
+        else if (messageText.includes("Vos chasseuses ont conquis") && messageText.includes("rapportent")) {
+            console.log("Extraction chasse - messageText:", messageText.substring(0, 100) + "...");
+            detail.type = "Chasse réussie";
+            detail.lieu = "Terrain de Chasse";
+            detail.cible = "";
+            
+            // Extraire la quantité de terrain depuis le sous-message uniquement
+            const matchTerrain = messageText.match(/Vos chasseuses ont conquis\s+([\d\s]+)\s+cm²/);
+            if (matchTerrain) {
+                detail.qte = parseInt(matchTerrain[1].replace(/\s/g, ''));
+            }
+            
+            // Extraire les ressources de chasse depuis le sous-message
+            const matchRessources = messageText.match(/rapportent\s+([\d\s]+)/);
+            if (matchRessources) {
+                detail.ressourcesChasse = parseInt(matchRessources[1].replace(/\s/g, ''));
+            }
+            
+            // Extraire les troupes
+            const matchAttaque = messageText.match(/Troupes en attaque\s*:\s*([^.]+)/);
+            if (matchAttaque) {
+                detail.troupesAttaque = matchAttaque[1].trim();
+            }
+            
+            const matchDefense = messageText.match(/Troupes en défense\s*:\s*([^.]+)/);
+            if (matchDefense) {
+                detail.troupesDefense = matchDefense[1].trim();
+            }
+            
+            // Extraire les évolutions
+            const matchEvolutions = messageText.match(/(\d+)\s+([^sont]+)\s+sont devenues?\s+([^.]+)/g);
+            if (matchEvolutions) {
+                detail.evolutions = matchEvolutions.map(evo => evo.trim());
+            }
+        }
+        
+        // 6. RÉBELLION
+        else if (messageText.includes("À présent, votre fourmilière est libre") && messageText.includes("pillé")) {
+            detail.type = "Rébellion réussie";
+            
+            // Extraire la durée de tyrannie
+            const matchDuree = messageText.match(/depuis\s+(\d+J\s+\d+H\s+\d+m\s+\d+s)/);
+            if (matchDuree) {
+                detail.dureeTyrannie = matchDuree[1];
+            }
+            
+            // Extraire les ressources pillées
+            const matchNourriture = messageText.match(/pillé\s+([\d\s]+)\s+nourriture/);
+            if (matchNourriture) {
+                detail.nourriturePillee = parseInt(matchNourriture[1].replace(/\s/g, ''));
+            }
+            
+            const matchMateriaux = messageText.match(/pillé\s+[\d\s]+\s+nourriture\s+et\s+([\d\s]+)\s+matériaux/);
+            if (matchMateriaux) {
+                detail.materiauxPilles = parseInt(matchMateriaux[1].replace(/\s/g, ''));
+            }
+            
+            // Extraire les troupes
+            const matchAttaque = messageText.match(/Troupes en attaque\s*:\s*([^.]+)/);
+            if (matchAttaque) {
+                detail.troupesAttaque = matchAttaque[1].trim();
+            }
+            
+            const matchDefense = messageText.match(/Troupes en défense\s*:\s*([^.]+)/);
+            if (matchDefense) {
+                detail.troupesDefense = matchDefense[1].trim();
+            }
+            
+            // Utiliser la cible de rébellion passée en paramètre (extraite du message principal)
+            if (cibleRebellion) {
+                detail.cible = cibleRebellion;
+                this._getInfosJoueur(detail.cible).then(infos => {
+                    if (infos && infos.Alliance) {
+                        detail.alliance = infos.Alliance;
+                        this._sauvegarderHistorique();
+                    }
+                }).catch(error => {
+                    console.warn("Erreur lors de la récupération de l'alliance pour", detail.cible, ":", error);
+                });
+            }
+
+            detail.lieu = "Loge Impériale";
+        }
+        
+        // Si aucun type reconnu, ne pas créer d'entrée
+        if (!detail.type) {
+            return null;
+        }
+        
+        
+        return detail;
+    }
+
+
+    /**
+     * Génère l'affichage des détails pour une entrée
+     * 
+     * @method genererDetailsAffichage
+     * @param {Object} entree - Entrée d'historique
+     * @return {String} HTML des détails
+     */
+    genererDetailsAffichage(entree)
+    {
+        const details = [];
+        
+        // Résultat
+        if (entree.resultat) {
+            const emoji = entree.resultat === "réussite" ? "✅" : "❌";
+            details.push(`${emoji} ${entree.resultat}`);
+        }
+        
+        // Troupes en attaque
+        if (entree.troupesAttaque) {
+            details.push(`⚔️ Att: ${entree.troupesAttaque.substring(0, 30)}${entree.troupesAttaque.length > 30 ? '...' : ''}`);
+        }
+        
+        // Troupes en défense
+        if (entree.troupesDefense) {
+            details.push(`🛡️ Déf: ${entree.troupesDefense.substring(0, 30)}${entree.troupesDefense.length > 30 ? '...' : ''}`);
+        }
+        
+        // Trophées
+        if (entree.trophees) {
+            details.push(`🏆 ${entree.trophees} trophées`);
+        }
+        
+        // Évolutions
+        if (entree.evolutions && entree.evolutions.length > 0) {
+            details.push(`📈 ${entree.evolutions.length} évolution(s)`);
+        }
+        
+        // Ressources pillées
+        if (entree.nourriturePillee) {
+            details.push(`🍯 ${entree.nourriturePillee.toLocaleString()} nourriture`);
+        }
+        
+        if (entree.materiauxPilles) {
+            details.push(`🔨 ${entree.materiauxPilles.toLocaleString()} matériaux`);
+        }
+        
+        // Durée de tyrannie
+        if (entree.dureeTyrannie) {
+            details.push(`⏰ ${entree.dureeTyrannie}`);
+        }
+        
+        // Ressources de chasse
+        if (entree.ressourcesChasse) {
+            details.push(`🦌 ${entree.ressourcesChasse.toLocaleString()} nourriture`);
+        }
+        
+        return details.length > 0 ? details.join('<br>') : '-';
+    }
+
+    /**
+     * Initialise les filtres après insertion du HTML dans le DOM
+     * 
+     * @method initialiserFiltres
+     */
+    initialiserFiltres()
+    {
+        const filtres = document.querySelectorAll('.filtre-btn');
+        const lignes = document.querySelectorAll('.ligne-historique');
+        
+        filtres.forEach(filtre => {
+            filtre.addEventListener('click', function() {
+                const type = this.dataset.type;
+                
+                // Mettre à jour l'état des filtres
+                filtres.forEach(f => f.classList.remove('inactive'));
+                this.classList.add('inactive');
+                
+                // Filtrer les lignes du tableau
+                lignes.forEach(ligne => {
+                    if (type === 'Tous' || ligne.dataset.type === type) {
+                        ligne.style.display = '';
+                    } else {
+                        ligne.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    /**
+     * Nettoie l'historique (supprime les entrées anciennes)
+     * 
+     * @method nettoyerHistorique
+     * @param {Number} jours - Nombre de jours à conserver (défaut: 30)
+     */
+    nettoyerHistorique(jours = 30)
+    {
+        const historique = this.chargerHistorique();
+        const dateLimite = new Date();
+        dateLimite.setDate(dateLimite.getDate() - jours);
+        
+        const historiqueNettoye = {};
+        Object.entries(historique).forEach(([key, entree]) => {
+            if (new Date(entree.date) >= dateLimite) {
+                historiqueNettoye[key] = entree;
+            }
+        });
+        
+        const dataFinale = {
+            ...historiqueNettoye,
+            timestamp: new Date().toISOString(),
+            serveur: Utils.serveur
+        };
+        
+        localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
+        console.log(`Historique nettoyé: ${Object.keys(historique).length - Object.keys(historiqueNettoye).length} entrées supprimées`);
+    }
+
+    /**
+     * Obtient les statistiques de l'historique
+     * 
+     * @method getStatistiques
+     * @return {Object} Statistiques de l'historique
+     */
+    getStatistiques()
+    {
+        const historique = this.chargerHistorique();
+        const stats = {
+            totalEntrees: Object.keys(historique).length,
+            totalButin: 0,
+            totalVol: 0,
+            totalChasse: 0,
+            soldeTotal: 0,
+            attaquesReussies: 0,
+            attaquesEchouees: 0,
+            rebellionsReussies: 0,
+            chassesReussies: 0,
+            derniereActivite: null
+        };
+        
+        Object.values(historique).forEach(entree => {
+            switch(entree.type) {
+                case "Butin":
+                    stats.totalButin += entree.qte;
+                    stats.soldeTotal += entree.qte;
+                    break;
+                case "Vol":
+                    stats.totalVol += entree.qte;
+                    stats.soldeTotal -= entree.qte;
+                    break;
+                case "Chasse réussie":
+                    stats.totalChasse += entree.qte;
+                    stats.soldeTotal += entree.qte;
+                    stats.chassesReussies++;
+                    break;
+                case "Attaque réussie":
+                    stats.attaquesReussies++;
+                    break;
+                case "Attaque échouée":
+                    stats.attaquesEchouees++;
+                    break;
+                case "Rébellion réussie":
+                    stats.rebellionsReussies++;
+                    break;
+            }
+            
+            if (!stats.derniereActivite || new Date(entree.date) > new Date(stats.derniereActivite)) {
+                stats.derniereActivite = entree.date;
+            }
+        });
+        
+        return stats;
+    }
+}

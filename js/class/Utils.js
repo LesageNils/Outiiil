@@ -258,4 +258,30 @@ class Utils
         }
         return element;
     }
+
+    /**
+     * Formate une date ISO en format français avec nom du jour court
+     * 
+     * @static
+     * @method formaterDateFrancaise
+     * @param {String} dateISO - Date au format ISO (ex: "2025-10-09T21:54+01:00")
+     * @return {String} Date formatée (ex: "ven. 10 oct. 2025 21:54")
+     */
+    static formaterDateFrancaise(dateISO)
+    {
+        try {
+            const date = moment(dateISO);
+            
+            // Vérifier que la date est valide
+            if (!date.isValid()) {
+                return "Date invalide";
+            }
+            
+            // Formater avec moment.js en français
+            return date.format("ddd D MMM YYYY HH:mm");
+        } catch (error) {
+            console.warn("Erreur lors du formatage de la date:", dateISO, error);
+            return "Date invalide";
+        }
+    }
 }
