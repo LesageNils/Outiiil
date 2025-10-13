@@ -42,30 +42,19 @@ class Historique
     {
         const defer = $.Deferred();
         
+        // Initialiser le tableau des nouvelles données
+        this._tabHistoTdc = {};
+        
         $.ajax({
             url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
-                this._tabHistoTdc = {};
                 const chaine = [];
-                let lst_debug = "";
 
                 $(page).find('#table_liste_conversations tr[data-type="Combats"], #table_liste_conversations tr[data-type="Chasses"]').find('.td_objet').each((idx, ligne) => {
                     // ID MESSAGE
                     const msg_id = 'id_' + $(ligne).parent().attr('id').replace("conversation_", "");
-                    
-                    // Extraire la date depuis le message principal
-                    const msg_date = $(ligne).find("span").text().split(" ");
-                    let dateMessage = new Date().toISOString();
-                    
-                    // Parser la date du message principal
-                    if (msg_date.length > 0) {
-                        const dateParsed = this._parserDate(msg_date);
-                        if (dateParsed) {
-                            dateMessage = dateParsed;
-                        }
-                    }
                     
                     // Extraire les informations depuis le message principal pour la rébellion
                     const messageObjet = $(ligne).find("a").text();
@@ -82,12 +71,21 @@ class Historique
                     chaine.push(this.recupererDetailMessage(msg_id, cibleRebellion));
                 });
 
+                // Traiter tous les messages, puis sauvegarder une seule fois
                 $.when.apply($, chaine).then(() => {
                     if (Object.keys(this._tabHistoTdc).length > 0) {
                         // Récupérer les alliances pour toutes les entrées
-                        this._recupererAlliances();
+                        this._recupererAlliances().then(() => {
+                            // Charger et combiner toutes les données existantes
+                            this._chargerEtCombinerDonnees().then(() => {
+                                // Sauvegarde finale unique
+                                this._sauvegarderFinale();
+                                defer.resolve(this._tabHistoTdc);
+                            });
+                        });
+                    } else {
+                        defer.resolve(this._tabHistoTdc);
                     }
-                    defer.resolve(this._tabHistoTdc);
                 });
             },
             error: (xhr, status, error) => {
@@ -207,34 +205,138 @@ class Historique
         return resultat;
     }
 
+
+
+
     /**
-     * Sauvegarde l'historique dans localStorage
+     * Charge les données d'historique depuis le forum
      * 
      * @private
-     * @method _sauvegarderHistorique
+     * @method _chargerDonneesForum
+     * @return {Promise<Object>} Promise avec les données du forum
      */
-    _sauvegarderHistorique()
+    _chargerDonneesForum()
     {
-        try {
-            // Récupérer les données existantes
-            const dataExistantes = JSON.parse(localStorage.getItem("outiiil_historique")) || {};
+        return new Promise((resolve) => {
+            const forum = new PageForum();
             
-            // Fusionner avec les nouvelles données
-            const dataFinale = {
-                ...dataExistantes,
-                ...this._tabHistoTdc,
-                timestamp: new Date().toISOString(),
-                serveur: Utils.serveur
-            };
-            
-            localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
-            
-            // Rafraîchir l'affichage si on est sur l'onglet historique
-            this._rafraichirAffichage();
-        } catch (error) {
-            console.warn("Erreur lors de la sauvegarde de l'historique:", error);
-        }
+            // Vérifier si la section existe
+            forum.chercherSection("Outiiil_HistoTDC").then((idSection) => {
+                if (idSection !== "0") {
+                    // Consulter la section pour récupérer le sujet du joueur
+                    forum.consulterSection(idSection).then((data) => {
+                        const response = $(data).find("cmd:eq(1)").text();
+                        const pseudoJoueur = monProfil.pseudo;
+                        
+                        if (response.includes(pseudoJoueur)) {
+                            // Récupérer le contenu du sujet du joueur
+                            this._recupererContenuSujetForum(forum, idSection, pseudoJoueur).then((contenuForum) => {
+                                resolve(contenuForum);
+                            });
+                        } else {
+                            console.log("Aucun sujet d'historique trouvé dans le forum pour", pseudoJoueur);
+                            resolve({});
+                        }
+                    }, (error) => {
+                        console.warn("Erreur lors de la consultation de la section forum:", error);
+                        resolve({});
+                    });
+                } else {
+                    console.log("Section Outiiil_HistoTDC n'existe pas encore dans le forum");
+                    resolve({});
+                }
+            });
+        });
     }
+
+    /**
+     * Récupère le contenu du sujet d'historique depuis le forum
+     * 
+     * @private
+     * @method _recupererContenuSujetForum
+     * @param {PageForum} forum - Instance du forum
+     * @param {String} idSection - ID de la section
+     * @param {String} pseudoJoueur - Pseudo du joueur
+     * @return {Promise<Object>} Promise avec le contenu du sujet
+     */
+    _recupererContenuSujetForum(forum, idSection, pseudoJoueur)
+    {
+        return new Promise((resolve) => {
+            forum.consulterSection(idSection).then((data) => {
+                const response = $(data).find("cmd:eq(1)").text();
+                const $response = $("<div/>").append(response);
+                
+                // Trouver l'ID du sujet du joueur
+                let idSujet = null;
+                $response.find("#form_cat tr:gt(0)").each((i, elt) => {
+                    const titreSujet = $(elt).find("td:eq(1)").text().trim();
+                    if (titreSujet === pseudoJoueur) {
+                        const onclickAttr = $(elt).find("a.topic_forum").attr("onclick");
+                        if (onclickAttr) {
+                            const match = onclickAttr.match(/\d+/);
+                            if (match) {
+                                idSujet = match[0];
+                            }
+                        }
+                        return false; // Sortir de la boucle
+                    }
+                });
+                
+                if (idSujet) {
+                    // Récupérer le contenu du sujet
+                    forum.consulterSujet(idSujet).then((dataSujet) => {
+                        try {
+                            // Extraire le JSON du contenu du sujet
+                            const contenuSujet = $(dataSujet).find("cmd:eq(1)").text();
+                            const matchJson = contenuSujet.match(/\{[\s\S]*\}/);
+                            
+                            if (matchJson) {
+                                const donneesForum = JSON.parse(matchJson[0]);
+                                console.log("Données récupérées du forum:", Object.keys(donneesForum).length, "entrées");
+                                resolve(donneesForum);
+                            } else {
+                                console.log("Aucun JSON trouvé dans le sujet du forum");
+                                resolve({});
+                            }
+                        } catch (error) {
+                            console.warn("Erreur lors du parsing des données du forum:", error);
+                            resolve({});
+                        }
+                    }, (error) => {
+                        console.warn("Erreur lors de la consultation du sujet forum:", error);
+                        resolve({});
+                    });
+                } else {
+                    console.log("Impossible de trouver l'ID du sujet forum pour", pseudoJoueur);
+                    resolve({});
+                }
+            });
+        });
+    }
+
+
+    /**
+     * Synchronise l'historique avec le forum
+     * Utilise la méthode optimisée de Forum.js
+     * 
+     * @method synchroniserAvecForum
+     * @return {Promise} Promise résolue quand la synchronisation est terminée
+     */
+    synchroniserAvecForum()
+    {
+        return new Promise((resolve) => {
+            const forum = new PageForum();
+            
+            // Utiliser la méthode optimisée de Forum.js
+            forum.gererSujetHistoriqueTDC(this._tabHistoTdc).then(() => {
+                resolve();
+            }).catch((error) => {
+                console.warn("Erreur lors de la synchronisation avec le forum:", error);
+                resolve(); // Résoudre quand même pour ne pas bloquer
+            });
+        });
+    }
+
 
     /**
      * Récupère les alliances pour toutes les entrées qui ont une cible
@@ -244,29 +346,93 @@ class Historique
      */
     _recupererAlliances()
     {
-        const promises = [];
-        const entreesSansAlliance = [];
-        
-        for (const [msgId, entree] of Object.entries(this._tabHistoTdc)) {
-            if (entree.cible && !entree.alliance) {
-                entreesSansAlliance.push({ msgId, cible: entree.cible });
-                promises.push(
-                    this._getInfosJoueur(entree.cible).then(infos => {
-                        if (infos && infos.Alliance) {
-                            this._tabHistoTdc[msgId].alliance = infos.Alliance;
-                        }
-                    }).catch(error => {
-                        console.warn("Erreur lors de la récupération de l'alliance pour", entree.cible, ":", error);
-                    })
-                );
+        return new Promise((resolve) => {
+            const promises = [];
+            const entreesSansAlliance = [];
+            
+            for (const [msgId, entree] of Object.entries(this._tabHistoTdc)) {
+                if (entree.cible && !entree.alliance) {
+                    entreesSansAlliance.push({ msgId, cible: entree.cible });
+                    promises.push(
+                        this._getInfosJoueur(entree.cible).then(infos => {
+                            if (infos && infos.Alliance) {
+                                this._tabHistoTdc[msgId].alliance = infos.Alliance;
+                            }
+                        }).catch(error => {
+                            console.warn("Erreur lors de la récupération de l'alliance pour", entree.cible, ":", error);
+                        })
+                    );
+                }
             }
-        }
-        
-        if (promises.length > 0) {
-            $.when.apply($, promises).then(() => {
-                // Sauvegarder après avoir récupéré toutes les alliances
-                this._sauvegarderHistorique();
+            
+            if (promises.length > 0) {
+                $.when.apply($, promises).then(() => {
+                    console.log("Alliances récupérées pour", promises.length, "entrées");
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
+    }
+
+    /**
+     * Charge et combine toutes les données existantes (localStorage + forum + nouvelles)
+     * 
+     * @private
+     * @method _chargerEtCombinerDonnees
+     * @return {Promise} Promise résolue quand toutes les données sont combinées
+     */
+    _chargerEtCombinerDonnees()
+    {
+        return new Promise((resolve) => {
+            // Charger depuis localStorage
+            const historiqueLocalStorage = this.chargerHistorique();
+            
+            // Charger depuis le forum
+            this._chargerDonneesForum().then((historiqueForum) => {
+                // Combiner toutes les données (localStorage + forum + nouvelles)
+                this._tabHistoTdc = {
+                    ...historiqueLocalStorage,
+                    ...historiqueForum,
+                    ...this._tabHistoTdc // Les nouvelles données écrasent les anciennes
+                };
+                
+                console.log("Données combinées:", Object.keys(this._tabHistoTdc).length, "entrées totales");
+                resolve();
             });
+        });
+    }
+
+    /**
+     * Sauvegarde finale unique dans localStorage et forum
+     * 
+     * @private
+     * @method _sauvegarderFinale
+     */
+    _sauvegarderFinale()
+    {
+        try {
+            // Préparer les données finales avec métadonnées
+            const dataFinale = {
+                ...this._tabHistoTdc,
+                timestamp: new Date().toISOString(),
+                serveur: Utils.serveur
+            };
+            
+            // Sauvegarder dans localStorage
+            localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
+            console.log("Sauvegarde finale dans localStorage:", Object.keys(this._tabHistoTdc).length, "entrées");
+            
+            // Synchroniser avec le forum
+            this.synchroniserAvecForum().catch(error => {
+                console.warn("Erreur lors de la synchronisation finale avec le forum:", error);
+            });
+            
+            // Rafraîchir l'affichage si nécessaire
+            this._rafraichirAffichage();
+        } catch (error) {
+            console.warn("Erreur lors de la sauvegarde finale:", error);
         }
     }
 
@@ -372,7 +538,7 @@ class Historique
         
         // Titre avec icône
         html += `<h3 class="o_titre_cadre" style="background:${couleurs.titre};">
-            <div class='mini_icone_historique'/> Historique TDC
+            📈 Historique TDC
             ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`)}
         </h3>`;
         
@@ -535,10 +701,20 @@ class Historique
         const tdcOrigine = donneesGraphique.tdcOrigine;
         const difference = tdcActuel - tdcOrigine;
         
+        // Calculer les dates de début et fin
+        let dateDebut = '';
+        let dateFin = '';
+        if (entrees.length > 0) {
+            const dates = entrees.map(e => new Date(e.date)).sort((a, b) => a - b);
+            dateDebut = Utils.formaterDateFrancaise(dates[0].toISOString());
+            dateFin = Utils.formaterDateFrancaise(dates[dates.length - 1].toISOString());
+        }
+        
         return `
         <div style="margin-bottom: 20px; background: ${couleurs.fond}; border: 1px solid ${couleurs.bordure}; border-radius: 6px; padding: 15px;">
             <h4 style="margin: 0 0 10px 0; color: ${couleurs.texte}; font-size: 14px; text-align: center;">
                 📈 Évolution du TDC dans le temps
+                ${dateDebut && dateFin ? `<br/><span style="font-size: 11px; font-weight: normal; color: #6c757d;">Du ${dateDebut} au ${dateFin}</span>` : ''}
             </h4>
             <div style="text-align: center; margin-bottom: 10px; font-size: 11px; color: ${couleurs.texte};">
                 <span style="color: #28a745;">TDC actuel: ${numeral(tdcActuel).format('0,0')} cm²</span> | 
@@ -762,9 +938,7 @@ class Historique
                             };
                         });
                         
-                        // Sauvegarder après avoir ajouté les détails
-                        console.log("Sauvegarde l'historique", this._tabHistoTdc);
-                        this._sauvegarderHistorique();
+                        console.log("Détails ajoutés à l'historique", Object.keys(this._tabHistoTdc).length, "entrées");
                     }
                     defer.resolve();
                 } catch (error) {
@@ -1229,7 +1403,9 @@ class Historique
                     labels: {
                         style: { color: couleurs.texte },
                         formatter: function() {
-                            return Highcharts.dateFormat('%d/%m %H:%M', this.value);
+                            const date = Highcharts.dateFormat('%d/%m', this.value);
+                            const heure = Highcharts.dateFormat('%H:%M', this.value);
+                            return `${heure}<br/>${date}`;
                         }
                     }
                 },

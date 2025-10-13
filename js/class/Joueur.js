@@ -89,6 +89,7 @@ class Joueur
         // parametres utilitaires
         this._parametre["forumCommande"] = new Parametre("forumCommande", "Commande", "input");
         this._parametre["forumMembre"] = new Parametre("forumMembre", "Membre", "input");
+        this._parametre["forumHistoTDC"] = new Parametre("forumHistoTDC", "ID Section Historique TDC", "input");
         // parametres armée
         this._parametre["methodeFlood"] = new Parametre("methodeFlood", "Méthode de flood", "select", 0, METHODE_FLOOD);
         this._parametre["uniteAntisondeTerrain"] = new Parametre("uniteAntisondeTerrain", "Antisonde max en terrain", "number", 1);
