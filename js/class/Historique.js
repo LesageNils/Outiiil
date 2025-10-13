@@ -17,19 +17,6 @@ class Historique
          * Tableau des données d'historique TDC
          */
         this._tabHistoTdc = {};
-        
-        /**
-         * Constantes pour les mois
-         */
-        this._MOIS = {
-            "janv.": 0, "févr.": 1, "mars": 2, "avr.": 3, "mai": 4, "juin": 5,
-            "juil.": 6, "août": 7, "sept.": 8, "oct.": 9, "nov.": 10, "déc.": 11
-        };
-        
-        /**
-         * Jours de la semaine
-         */
-        this._JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
     }
 
     /**
@@ -71,22 +58,20 @@ class Historique
                     chaine.push(this.recupererDetailMessage(msg_id, cibleRebellion));
                 });
 
-                // Traiter tous les messages, puis sauvegarder une seule fois
-                $.when.apply($, chaine).then(() => {
-                    if (Object.keys(this._tabHistoTdc).length > 0) {
-                        // Récupérer les alliances pour toutes les entrées
-                        this._recupererAlliances().then(() => {
-                            // Charger et combiner toutes les données existantes
-                            this._chargerEtCombinerDonnees().then(() => {
-                                // Sauvegarde finale unique
-                                this._sauvegarderFinale();
-                                defer.resolve(this._tabHistoTdc);
-                            });
-                        });
-                    } else {
-                        defer.resolve(this._tabHistoTdc);
-                    }
-                });
+                   // Traiter tous les messages, puis sauvegarder une seule fois
+                   $.when.apply($, chaine).then(() => {
+                       console.log("📊 DONNÉES ANALYSÉES DE LA MESSAGERIE:", Object.keys(this._tabHistoTdc).length, "entrées");
+                       console.log("📋 Détail des messages analysés:", this._tabHistoTdc);
+                       
+                       if (Object.keys(this._tabHistoTdc).length > 0) {
+                           // Récupérer les alliances et combiner les données en une seule opération
+                           this._finaliserHistorique().then(() => {
+                               defer.resolve(this._tabHistoTdc);
+                           });
+                       } else {
+                           defer.resolve(this._tabHistoTdc);
+                       }
+                   });
             },
             error: (xhr, status, error) => {
                 console.warn("Erreur lors de l'analyse de la messagerie:", error);
@@ -98,61 +83,48 @@ class Historique
     }
 
     /**
-     * Parse une date à partir du format Fourmizzz
+     * Finalise l'historique : récupère les alliances, combine les données et sauvegarde
      * 
      * @private
-     * @method _parserDate
-     * @param {Array} msg_date - Tableau des éléments de date
-     * @return {String} Date formatée YYYY-MM-DD HH:mm
+     * @method _finaliserHistorique
+     * @return {Promise} Promise résolue quand tout est terminé
      */
-    _parserDate(msg_date)
+    _finaliserHistorique()
     {
-        let c_annee = new Date().getFullYear();
-        let c_mois = new Date().getMonth() + 1; // 1-12 pour l'affichage
-        let c_jour = new Date().getDate();
-        let C_nomJour = "";
-        let c_heure = "";
-
-        switch (msg_date.length) {
-            case 3:
-                c_jour = msg_date[0];
-                c_mois = parseInt(this._MOIS[msg_date[1]]) + 1; // +1 car _MOIS est 0-11, on veut 1-12
-                c_heure = msg_date[2].replace("h", ":");
-                break;
-            case 2:
-                c_jour = msg_date[0];
-                c_heure = msg_date[1].replace("h", ":");
-                // Pour les messages sans mois explicite, on garde le mois actuel
-                break;
-            case 1:
-                c_heure = msg_date[0].replace("h", ":");
-                // Pour les messages sans jour ni mois, on garde la date actuelle
-                break;
-        }
-
-        if (this._JOURS.includes(c_jour)) {
-            const dateCalculee = this._getLastDayOccurence(c_jour);
-            c_jour = dateCalculee.getDate();
-            c_mois = dateCalculee.getMonth() + 1; // +1 car getMonth() retourne 0-11
-            c_annee = dateCalculee.getFullYear();
-        }
-        
-        if (c_jour === "hier") {
-            const hier = new Date();
-            hier.setDate(hier.getDate() - 1);
-            c_jour = hier.getDate();
-            c_mois = hier.getMonth() + 1; // +1 car getMonth() retourne 0-11
-            c_annee = hier.getFullYear();
-        }
-        
-        if (c_jour < 10) {
-            c_jour = '0' + c_jour;
-        }
-        if (c_mois < 10) {
-            c_mois = '0' + c_mois;
-        }
-        
-        return c_annee + '-' + c_mois + '-' + c_jour + "T" + c_heure + "+01:00";
+        return new Promise((resolve) => {
+            // D'abord, s'assurer que la section forum existe
+            const forum = window.forumGlobal || new PageForum();
+            forum.creerSectionHistoriqueTDC().then((idSection) => {
+                
+                // Ensuite, récupérer les alliances et charger les données existantes en parallèle
+                const promises = [this._recupererAlliances()];
+                
+                // Charger les données existantes (localStorage + forum) en parallèle
+                const historiqueLocalStorage = this.chargerHistorique();
+                promises.push(this._chargerDonneesForum());
+                
+                $.when.apply($, promises).then((_, historiqueForum) => {
+                    console.log("💾 DONNÉES RÉCUPÉRÉES DU STOCKAGE LOCAL:", Object.keys(historiqueLocalStorage).length, "entrées");
+                    console.log("📦 Détail du stockage local:", historiqueLocalStorage);
+                    
+                    console.log("🌐 DONNÉES RÉCUPÉRÉES DU FORUM:", Object.keys(historiqueForum).length, "entrées");
+                    console.log("📋 Détail des données forum:", historiqueForum);
+                    
+                    // Combiner toutes les données
+                    this._tabHistoTdc = {
+                        ...historiqueLocalStorage,
+                        ...historiqueForum,
+                        ...this._tabHistoTdc // Les nouvelles données écrasent les anciennes
+                    };
+                    
+                    console.log("✅ DONNÉES FINALES COMBINÉES:", Object.keys(this._tabHistoTdc).length, "entrées");
+                    
+                    // Sauvegarde finale unique
+                    this._sauvegarderFinale();
+                    resolve();
+                });
+            });
+        });
     }
 
     /**
@@ -185,25 +157,6 @@ class Historique
         return defer.promise();
     }
 
-    /**
-     * Calcule la dernière occurrence d'un jour de la semaine
-     * 
-     * @private
-     * @method _getLastDayOccurence
-     * @param {String} jour - Jour de la semaine
-     * @return {Date} Date de la dernière occurrence
-     */
-    _getLastDayOccurence(jour)
-    {
-        const joursIndex = this._JOURS.indexOf(jour);
-        const aujourdhui = new Date();
-        const jourActuel = aujourdhui.getDay();
-        const diff = (jourActuel - joursIndex + 7) % 7;
-        
-        const resultat = new Date(aujourdhui);
-        resultat.setDate(aujourdhui.getDate() - diff);
-        return resultat;
-    }
 
 
 
@@ -218,33 +171,50 @@ class Historique
     _chargerDonneesForum()
     {
         return new Promise((resolve) => {
-            const forum = new PageForum();
+            // Utiliser l'instance globale de PageForum
+            const forum = window.forumGlobal || new PageForum();
             
-            // Vérifier si la section existe
+            // Chercher la section par nom (plus fiable pour vérifier l'existence)
             forum.chercherSection("Outiiil_HistoTDC").then((idSection) => {
                 if (idSection !== "0") {
                     // Consulter la section pour récupérer le sujet du joueur
-                    forum.consulterSection(idSection).then((data) => {
-                        const response = $(data).find("cmd:eq(1)").text();
-                        const pseudoJoueur = monProfil.pseudo;
-                        
-                        if (response.includes(pseudoJoueur)) {
-                            // Récupérer le contenu du sujet du joueur
-                            this._recupererContenuSujetForum(forum, idSection, pseudoJoueur).then((contenuForum) => {
-                                resolve(contenuForum);
-                            });
-                        } else {
-                            console.log("Aucun sujet d'historique trouvé dans le forum pour", pseudoJoueur);
-                            resolve({});
-                        }
-                    }, (error) => {
-                        console.warn("Erreur lors de la consultation de la section forum:", error);
-                        resolve({});
+                    this._consulterSectionForum(forum, idSection).then((contenuForum) => {
+                        resolve(contenuForum);
                     });
                 } else {
-                    console.log("Section Outiiil_HistoTDC n'existe pas encore dans le forum");
                     resolve({});
                 }
+            });
+        });
+    }
+
+    /**
+     * Consulte une section du forum et récupère le contenu du sujet du joueur
+     * 
+     * @private
+     * @method _consulterSectionForum
+     * @param {PageForum} forum - Instance du forum
+     * @param {String} idSection - ID de la section
+     * @return {Promise<Object>} Promise avec le contenu du sujet
+     */
+    _consulterSectionForum(forum, idSection)
+    {
+        return new Promise((resolve) => {
+            forum.consulterSection(idSection).then((data) => {
+                const response = $(data).find("cmd:eq(1)").text();
+                const pseudoJoueur = monProfil.pseudo;
+                
+                if (response.includes(pseudoJoueur)) {
+                    // Récupérer le contenu du sujet du joueur
+                    this._recupererContenuSujetForum(forum, idSection, pseudoJoueur).then((contenuForum) => {
+                        resolve(contenuForum);
+                    });
+                } else {
+                    resolve({});
+                }
+            }, (error) => {
+                console.warn("Erreur lors de la consultation de la section forum:", error);
+                resolve({});
             });
         });
     }
@@ -291,11 +261,11 @@ class Historique
                             const matchJson = contenuSujet.match(/\{[\s\S]*\}/);
                             
                             if (matchJson) {
-                                const donneesForum = JSON.parse(matchJson[0]);
-                                console.log("Données récupérées du forum:", Object.keys(donneesForum).length, "entrées");
+                                // Décoder les entités HTML avant de parser le JSON
+                                const jsonDecode = $('<div/>').html(matchJson[0]).text();
+                                const donneesForum = JSON.parse(jsonDecode);
                                 resolve(donneesForum);
                             } else {
-                                console.log("Aucun JSON trouvé dans le sujet du forum");
                                 resolve({});
                             }
                         } catch (error) {
@@ -307,7 +277,6 @@ class Historique
                         resolve({});
                     });
                 } else {
-                    console.log("Impossible de trouver l'ID du sujet forum pour", pseudoJoueur);
                     resolve({});
                 }
             });
@@ -325,7 +294,7 @@ class Historique
     synchroniserAvecForum()
     {
         return new Promise((resolve) => {
-            const forum = new PageForum();
+            const forum = window.forumGlobal || new PageForum();
             
             // Utiliser la méthode optimisée de Forum.js
             forum.gererSujetHistoriqueTDC(this._tabHistoTdc).then(() => {
@@ -365,42 +334,13 @@ class Historique
                 }
             }
             
-            if (promises.length > 0) {
-                $.when.apply($, promises).then(() => {
-                    console.log("Alliances récupérées pour", promises.length, "entrées");
-                    resolve();
-                });
-            } else {
-                resolve();
-            }
-        });
-    }
-
-    /**
-     * Charge et combine toutes les données existantes (localStorage + forum + nouvelles)
-     * 
-     * @private
-     * @method _chargerEtCombinerDonnees
-     * @return {Promise} Promise résolue quand toutes les données sont combinées
-     */
-    _chargerEtCombinerDonnees()
-    {
-        return new Promise((resolve) => {
-            // Charger depuis localStorage
-            const historiqueLocalStorage = this.chargerHistorique();
-            
-            // Charger depuis le forum
-            this._chargerDonneesForum().then((historiqueForum) => {
-                // Combiner toutes les données (localStorage + forum + nouvelles)
-                this._tabHistoTdc = {
-                    ...historiqueLocalStorage,
-                    ...historiqueForum,
-                    ...this._tabHistoTdc // Les nouvelles données écrasent les anciennes
-                };
-                
-                console.log("Données combinées:", Object.keys(this._tabHistoTdc).length, "entrées totales");
-                resolve();
-            });
+               if (promises.length > 0) {
+                   $.when.apply($, promises).then(() => {
+                       resolve();
+                   });
+               } else {
+                   resolve();
+               }
         });
     }
 
@@ -422,7 +362,6 @@ class Historique
             
             // Sauvegarder dans localStorage
             localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
-            console.log("Sauvegarde finale dans localStorage:", Object.keys(this._tabHistoTdc).length, "entrées");
             
             // Synchroniser avec le forum
             this.synchroniserAvecForum().catch(error => {
@@ -444,17 +383,10 @@ class Historique
      */
     _rafraichirAffichage()
     {
-        // Vérifier si l'onglet historique est actif
         if ($("#contenu-historique").is(":visible")) {
-            // Utiliser l'instance globale pour le rafraîchissement
             const historique = window.historiqueGlobal || this;
-            const htmlHistorique = historique.genererHTML();
-            $("#contenu-historique").html(htmlHistorique);
-            
-            // Réinitialiser les filtres
-            setTimeout(() => {
-                historique.initialiserFiltres();
-            }, 100);
+            $("#contenu-historique").html(historique.genererHTML());
+            setTimeout(() => historique.initialiserFiltres(), 100);
         }
     }
 
@@ -478,14 +410,10 @@ class Historique
     }
 
     /**
-     * Récupère les couleurs du thème (même système que fourmiliere.js)
-     * 
-     * @method getCouleursTheme
-     * @return {Object} Objet contenant les couleurs du thème
+     * Récupère les couleurs du thème
      */
     getCouleursTheme()
     {
-        // Utiliser les mêmes paramètres de couleur que fourmiliere.js
         return {
             texte: monProfil.parametre["couleurTexte"]?.valeur || "#000000",
             fond: monProfil.parametre["couleur1"]?.valeur || "#f8f9fa",
@@ -496,22 +424,11 @@ class Historique
     }
 
     /**
-     * Génère un bouton d'ouverture de page (même style que fourmiliere.js)
-     * 
-     * @method genererBoutonOuvrir
-     * @param {String} url - URL à ouvrir
-     * @return {String} HTML du bouton
+     * Génère un bouton d'ouverture de page
      */
     genererBoutonOuvrir(url)
     {
-        const couleur = "#bd8d46";
-        return `
-        <button onclick="window.open('${url}', '_blank')" 
-                style="margin-left: auto; background: ${couleur}; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;"
-                onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'"
-                onmouseout="this.style.background='${couleur}'; this.style.transform='scale(1)'">
-            Ouvrir
-        </button>`;
+        return `<button onclick="window.open('${url}', '_blank')" style="margin-left: auto; background: #bd8d46; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#a67c3a'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#bd8d46'; this.style.transform='scale(1)'">Ouvrir</button>`;
     }
 
     /**
@@ -925,7 +842,6 @@ class Historique
             },
             dataType: 'html',
             success: (page) => {
-                console.log("Récupère le détail du message", msgId);
                 try {
                     const details = this.analyserDetailMessage(page, cibleRebellion);
                     if (details && details.length > 0) {
@@ -937,8 +853,6 @@ class Historique
                                 detailsRecuperes: true
                             };
                         });
-                        
-                        console.log("Détails ajoutés à l'historique", Object.keys(this._tabHistoTdc).length, "entrées");
                     }
                     defer.resolve();
                 } catch (error) {
@@ -1043,7 +957,6 @@ class Historique
         
         // Log pour déboguer
         if (!isTDC && texte.length > 10) {
-            console.log("Message non reconnu comme TDC:", texte.substring(0, 100) + "...");
         }
         
         return isTDC;
@@ -1188,7 +1101,6 @@ class Historique
         
         // 5. CHASSE
         else if (messageText.includes("Vos chasseuses ont conquis") && messageText.includes("rapportent")) {
-            console.log("Extraction chasse - messageText:", messageText.substring(0, 100) + "...");
             detail.type = "Chasse réussie";
             detail.lieu = "Terrain de Chasse";
             detail.cible = "";
@@ -1525,35 +1437,6 @@ class Historique
     }
 
     /**
-     * Nettoie l'historique (supprime les entrées anciennes)
-     * 
-     * @method nettoyerHistorique
-     * @param {Number} jours - Nombre de jours à conserver (défaut: 30)
-     */
-    nettoyerHistorique(jours = 30)
-    {
-        const historique = this.chargerHistorique();
-        const dateLimite = new Date();
-        dateLimite.setDate(dateLimite.getDate() - jours);
-        
-        const historiqueNettoye = {};
-        Object.entries(historique).forEach(([key, entree]) => {
-            if (new Date(entree.date) >= dateLimite) {
-                historiqueNettoye[key] = entree;
-            }
-        });
-        
-        const dataFinale = {
-            ...historiqueNettoye,
-            timestamp: new Date().toISOString(),
-            serveur: Utils.serveur
-        };
-        
-        localStorage.setItem("outiiil_historique", JSON.stringify(dataFinale));
-        console.log(`Historique nettoyé: ${Object.keys(historique).length - Object.keys(historiqueNettoye).length} entrées supprimées`);
-    }
-
-    /**
      * Obtient les statistiques de l'historique
      * 
      * @method getStatistiques
@@ -1608,4 +1491,5 @@ class Historique
         
         return stats;
     }
+
 }

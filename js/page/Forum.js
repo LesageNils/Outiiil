@@ -106,15 +106,19 @@ class PageForum
     */
    chercherSection(nomSection)
    {
+        // Utiliser la même approche que verifierSectionExiste mais en cherchant par nom
+        // D'abord, essayer de récupérer la liste des sections via une requête POST
         return $.ajax({
-            type: "get",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php`,
-            data: { forum_menu: "" },
-            dataType: "html"
-        }).then((page) => {
+            type: "post",
+            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            data: {
+                "xajax": "callGetForum",
+                "xajaxr": moment().valueOf()
+            }
+        }).then((data) => {
             try {
                 // Parser la réponse XML
-                const $response = $(page);
+                const $response = $(data);
                 
                 // Extraire le contenu CDATA de la commande "alliance"
                 const cmdAlliance = $response.find('cmd[n="as"][t="alliance"]');
@@ -136,24 +140,19 @@ class PageForum
                 sections.each((index, element) => {
                     const $section = $(element);
                     const nomSectionActuelle = $section.text().trim();
+                    const classe = $section.attr('class');
                     
                     // Vérifier si le nom correspond (insensible à la casse)
                     if (nomSectionActuelle.toLowerCase() === nomSection.toLowerCase()) {
                         // Extraire l'ID de la section depuis la classe (forumXXXX)
-                        const classe = $section.attr('class');
                         const matchId = classe.match(/forum(\d+)/);
                         
                         if (matchId) {
                             idSection = matchId[1];
-                            console.log(`Section "${nomSection}" trouvée avec l'ID:`, idSection);
                             return false; // Sortir de la boucle each
                         }
                     }
                 });
-                
-                if (idSection === "0") {
-                    console.log(`Section "${nomSection}" non trouvée`);
-                }
                 
                 return idSection;
                 
@@ -161,6 +160,9 @@ class PageForum
                 console.warn("Erreur lors de l'analyse de la réponse du forum:", error);
                 return "0";
             }
+        }).catch((error) => {
+            console.warn("Erreur lors de la requête pour chercher la section:", error);
+            return "0";
         });
     }
 
@@ -309,7 +311,6 @@ class PageForum
     executer()
     {
         // Si le forum est déjà chargé, lance le traitement
-        console.log("Initialisation du forum");
         if ($("#cat_forum").length) {
             this.traitementSection("#alliance");
         }
@@ -492,7 +493,6 @@ class PageForum
     {
         // Il faut être chef pour préparer le forum
         if ($("img[src='images/icone/outil.gif']").length && !$("#o_afficheMenuUtilitaire").length) {
-            console.log("Affichage du menu utilitaire");
             
             $("#cat_forum").prepend(`
                 <span id="o_afficheMenuUtilitaire" class="o_forumOption categorie_forum">
@@ -582,49 +582,105 @@ class PageForum
         return new Promise((resolve) => {
             // Vérifier d'abord si l'ID est déjà stocké dans les paramètres
             if (monProfil.parametre["forumHistoTDC"] && monProfil.parametre["forumHistoTDC"].valeur) {
-                console.log("Section Outiiil_HistoTDC déjà connue avec l'ID:", monProfil.parametre["forumHistoTDC"].valeur);
-                resolve(monProfil.parametre["forumHistoTDC"].valeur);
+                // Vérifier que la section existe vraiment dans le forum
+                this.verifierSectionExiste(monProfil.parametre["forumHistoTDC"].valeur).then((existe) => {
+                    if (existe) {
+                        resolve(monProfil.parametre["forumHistoTDC"].valeur);
+                    } else {
+                        // L'ID stocké n'est plus valide, chercher une section existante ou en créer une nouvelle
+                        this._rechercherOuCreerSection().then((idSection) => {
+                            resolve(idSection);
+                        });
+                    }
+                });
                 return;
             }
             
+            // Pas d'ID stocké, chercher ou créer une section
+            this._rechercherOuCreerSection().then((idSection) => {
+                resolve(idSection);
+            });
+        });
+    }
+
+    /**
+     * Vérifie si une section existe vraiment dans le forum par son ID
+     * 
+     * @private
+     * @method verifierSectionExiste
+     * @param {String} idSection - ID de la section à vérifier
+     * @return {Promise<Boolean>} Promise avec true si la section existe
+     */
+    verifierSectionExiste(idSection)
+    {
+        return new Promise((resolve) => {
+            this.consulterSection(idSection).then((data) => {
+                // Si on peut consulter la section, elle existe
+                resolve(true);
+            }, (error) => {
+                // Si erreur, la section n'existe pas
+                resolve(false);
+            });
+        });
+    }
+
+    /**
+     * Recherche une section existante ou en crée une nouvelle
+     * 
+     * @private
+     * @method _rechercherOuCreerSection
+     * @return {Promise<String>} Promise avec l'ID de la section
+     */
+    _rechercherOuCreerSection()
+    {
+        return new Promise((resolve) => {
             this.chercherSection("Outiiil_HistoTDC").then((idSection) => {
                 if (idSection === "0") {
-                    // Créer la section si elle n'existe pas (même logique que _creerSectionsUtilitaire)
+                    // Créer la section si elle n'existe pas
                     this.creerSection("Outiiil_HistoTDC").then((data) => {
                         const response = $("<div/>").append($(data).find("cmd:eq(1)").html());
                         const newIdSection = $(response).find(`input[value='Outiiil_HistoTDC']`)
                             .parent().attr("id").match(/\d+/)[0];
                         
-                        console.log("Section Outiiil_HistoTDC créée automatiquement avec l'ID:", newIdSection);
                         
                         // Enregistrer l'ID dans les paramètres
-                        if (!monProfil.parametre["forumHistoTDC"]) {
-                            monProfil.parametre["forumHistoTDC"] = new Parametre("forumHistoTDC", "ID Section Historique TDC", "input", newIdSection);
-                        } else {
-                            monProfil.parametre["forumHistoTDC"].valeur = newIdSection;
-                        }
-                        monProfil.parametre["forumHistoTDC"].sauvegarde();
+                        this._enregistrerIdSection(newIdSection);
                         
-                        resolve(newIdSection);
+                        // Cacher la section après création
+                        this.modifierSection("Outiiil_HistoTDC", newIdSection, "cache").then(() => {
+                            resolve(newIdSection);
+                        }, (error) => {
+                            console.warn("Erreur lors du masquage de la section Outiiil_HistoTDC:", error);
+                            resolve(newIdSection);
+                        });
                     }, (error) => {
                         console.warn("Erreur lors de la création automatique de la section Outiiil_HistoTDC:", error);
                         resolve("0");
                     });
                 } else {
                     // Section existe déjà, l'enregistrer dans les paramètres
-                    console.log("Section Outiiil_HistoTDC existe déjà avec l'ID:", idSection);
-                    
-                    if (!monProfil.parametre["forumHistoTDC"]) {
-                        monProfil.parametre["forumHistoTDC"] = new Parametre("forumHistoTDC", "ID Section Historique TDC", "input", idSection);
-                    } else {
-                        monProfil.parametre["forumHistoTDC"].valeur = idSection;
-                    }
-                    monProfil.parametre["forumHistoTDC"].sauvegarde();
-                    
+                    this._enregistrerIdSection(idSection);
                     resolve(idSection);
                 }
             });
         });
+    }
+
+    /**
+     * Enregistre l'ID de la section dans les paramètres
+     * 
+     * @private
+     * @method _enregistrerIdSection
+     * @param {String} idSection - ID de la section à enregistrer
+     */
+    _enregistrerIdSection(idSection)
+    {
+        if (!monProfil.parametre["forumHistoTDC"]) {
+            monProfil.parametre["forumHistoTDC"] = new Parametre("forumHistoTDC", "ID Section Historique TDC", "input", idSection);
+        } else {
+            monProfil.parametre["forumHistoTDC"].valeur = idSection;
+        }
+        monProfil.parametre["forumHistoTDC"].sauvegarde();
     }
 
     /**
@@ -639,14 +695,12 @@ class PageForum
         return new Promise((resolve) => {
             // Vérifier que les données ne sont pas vides
             if (!donneesHistorique || Object.keys(donneesHistorique).length === 0) {
-                console.log("Aucune donnée d'historique à synchroniser");
                 resolve();
                 return;
             }
             
             // Éviter les appels multiples simultanés
             if (this._synchronisationEnCours) {
-                console.log("Synchronisation déjà en cours, ignorée");
                 resolve();
                 return;
             }
@@ -683,7 +737,6 @@ class PageForum
                         if (!sujetExiste) {
                             // Créer le sujet
                             this.creerSujet(pseudoJoueur, contenuHistorique, idSection).then(() => {
-                                console.log(`Sujet d'historique TDC créé pour ${pseudoJoueur}`);
                                 this._synchronisationEnCours = false;
                                 resolve();
                             }, (error) => {
@@ -903,7 +956,6 @@ class PageForum
             
             if (idSujet) {
                 this.modifierSujet(pseudoJoueur, contenuHistorique, idSujet).then(() => {
-                    console.log(`Sujet d'historique TDC mis à jour pour ${pseudoJoueur}`);
                     resolve();
                 }, (error) => {
                     console.warn("Erreur lors de la mise à jour du sujet d'historique TDC:", error);

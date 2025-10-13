@@ -250,57 +250,21 @@ const DATEPICKER_OPTION = {
                 console.warn("Impossible de charger les membres d'alliance:", error);
             });
 
-            // Chargement de l'historique TDC
-            window.historiqueGlobal = new Historique();
-            window.historiqueGlobal.analyserMessagerie().catch(error => {
-                console.warn("Impossible de charger l'historique TDC:", error);
-            });
+// Chargement de l'historique TDC
+window.historiqueGlobal = new Historique();
+window.historiqueGlobal.analyserMessagerie().catch(error => {
+    console.warn("Impossible de charger l'historique TDC:", error);
+});
 
-            // Exposer les classes globalement
-            window.Alliance = Alliance;
-            window.Historique = Historique;
+// Instance globale de PageForum pour éviter les instanciations multiples
+window.forumGlobal = new PageForum();
+
+// Exposer les classes globalement
+window.Alliance = Alliance;
+window.Historique = Historique;
+window.PageForum = PageForum;
             
             
-            // Fonction de test pour vérifier le parsing des messages
-            window.testHistoriqueParsing = function() {
-                const historique = new Historique();
-                const messagesTest = [
-                    "Attaque échouée contre Hugigigi : votre armée est morte dans la Loge Impériale",
-                    "Rebellion réussie contre Mandibules",
-                    "Butin chez Hugigigi : 3 543 265 cm²",
-                    "Attaque réussie contre Hugigigi : votre armée a franchi le Terrain de Chasse",
-                    "Vol par Hugigigi : 3 699 030 cm²",
-                    "Chasse réussie : vos chasseuses ont conquis 1 000 cm² en 1 expédition"
-                ];
-                
-                console.log("=== TEST PARSING HISTORIQUE ===");
-                messagesTest.forEach((msg, index) => {
-                    const detail = msg.split(" ");
-                    console.log(`Message ${index + 1}:`, msg);
-                    console.log("Détail:", detail);
-                    
-                    if (detail[0] === "Butin" || detail[0] === "Vol") {
-                        const terrain = parseInt(msg.split(" : ")[1].replace("cm²", "").replace(/ /g, ''));
-                        console.log("Type:", detail[0], "Quantité:", terrain, "Cible:", detail[2]);
-                    } else if (detail[0] === "Attaque" && detail[1] === "échouée") {
-                        const cible = msg.split(" contre ")[1].split(" : ")[0];
-                        const lieu = msg.split(" dans la ")[1] || msg.split(" dans le ")[1] || "";
-                        console.log("Type: Attaque échouée, Cible:", cible, "Lieu:", lieu);
-                    } else if (detail[0] === "Attaque" && detail[1] === "réussie") {
-                        const cible = msg.split(" contre ")[1].split(" : ")[0];
-                        const lieu = msg.split(" a franchi le ")[1] || msg.split(" a franchi la ")[1] || "";
-                        console.log("Type: Attaque réussie, Cible:", cible, "Lieu:", lieu);
-                    } else if (detail[0] === "Rebellion" && detail[1] === "réussie") {
-                        const cible = msg.split(" contre ")[1];
-                        console.log("Type: Rébellion réussie, Cible:", cible);
-                    } else if (detail[0] === "Chasse" && detail[1] === "réussie") {
-                        const terrain = parseInt(msg.split(" conquis ")[1].split(" cm²")[0].replace(/ /g, ''));
-                        const expeditions = parseInt(msg.split(" en ")[1].split(" expédition")[0]);
-                        console.log("Type: Chasse réussie, Quantité:", terrain, "Expéditions:", expeditions);
-                    }
-                    console.log("---");
-                });
-            };
             
             // Ajout des outils
             let boite = new Dock();
@@ -321,7 +285,6 @@ const DATEPICKER_OPTION = {
             }
 
             let uri = location.pathname, page = null;
-            console.log("uri:", uri);
             // Routing
             switch (true) {
                 case (uri == "/fourmiliere.php"):

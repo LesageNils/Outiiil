@@ -30,11 +30,6 @@ class PageFourmiliere {
             // Sauvegarde automatique des données récupérées
             this.sauvegarderToutesDonnees();
             this.afficherInfosJoueur();
-            console.log("donneesRessources", this.donneesRessources);
-            console.log("donneesReine", this.donneesReine);
-            console.log("donneesConstruction", this.donneesConstruction);
-            console.log("donneesRecherche", this.donneesRecherche);
-            console.log("donneesJoueur", this.donneesJoueur);
         }).catch((error) => {
             console.warn("Impossible de charger certaines données:", error);
             // Sauvegarde même en cas d'erreur partielle
