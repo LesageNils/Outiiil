@@ -1,7 +1,7 @@
 {
 	"manifest_version" : 3,
-	"name" : "Outiiil",
-	"version" : "2.0.3",
+	"name" : "Outiiil Renouveau",
+	"version" : "2.0.4",
 	"description" : "Outils de confort pour le jeu Fourmizzz : lanceur de chasses, simulateurs, synthèse de la fourmilière, historique TDC.",
 	"icons" : {"48" : "images/icons/gear_48.png", "96" : "images/icons/gear_96.png", "128" : "images/icons/gear_128.png"},
 	"action" : {"default_icon" : "images/icons/gear_48.png"},
@@ -80,7 +80,7 @@
 	"browser_specific_settings" : {
 		"gecko" : {
 			"id" : "outiiil@lesagenils.github.io",
-			"strict_min_version" : "128.0",
+			"strict_min_version" : "140.0",
 			"data_collection_permissions" : {"required" : ["none"]}
 		}
 	}

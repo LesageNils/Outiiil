@@ -2,13 +2,14 @@
 
 Textes à copier dans les formulaires du Chrome Web Store et d'addons.mozilla.org (AMO).
 
-Archive à téléverser : `publication/outiiil-<version>.zip`, la même pour les deux boutiques.
+Archive à téléverser : `publication/outiiil-renouveau-<version>.zip`, la même pour les deux boutiques.
 
 ---
 
 ## Informations communes
 
-- **Nom** : Outiiil
+- **Nom** : Outiiil Renouveau
+- **Adresse Firefox** : outiiil-renouveau
 - **Catégorie** : Chrome « Divertissement » (ou « Jeux »), Firefox « Jeux et divertissement »
 - **Langue** : français
 - **Licence** : GNU GPL v3
@@ -22,7 +23,7 @@ Outils de confort pour Fourmizzz : lanceur de chasses, simulateurs de combat, sy
 
 ### Description
 
-Outiiil ajoute des outils au jeu de stratégie Fourmizzz, directement dans les pages du jeu.
+Outiiil Renouveau ajoute des outils au jeu de stratégie Fourmizzz, directement dans les pages du jeu.
 
 - Lanceur de chasses : calcule la répartition des unités et lance vos chasses à la suite.
 - Simulateurs de chasse et de combat, lanceur de flood.

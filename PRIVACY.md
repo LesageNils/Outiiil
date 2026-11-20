@@ -1,12 +1,12 @@
-# Politique de confidentialité d'Outiiil
+# Politique de confidentialité d'Outiiil Renouveau
 
 *Dernière mise à jour : 20 novembre 2026*
 
-Outiiil est une extension de navigateur qui ajoute des outils au jeu [Fourmizzz](https://www.fourmizzz.fr). Elle est libre (licence GPL v3) : son code source complet est consultable sur [GitHub](https://github.com/LesageNils/Outiiil).
+Outiiil Renouveau est une extension de navigateur qui ajoute des outils au jeu [Fourmizzz](https://www.fourmizzz.fr). Elle est libre (licence GPL v3) : son code source complet est consultable sur [GitHub](https://github.com/LesageNils/Outiiil).
 
 ## En résumé
 
-Outiiil ne collecte aucune donnée pour son auteur et n'envoie rien à un serveur tiers. Elle ne communique qu'avec le jeu Fourmizzz (`*.fourmizzz.fr`), avec votre session de joueur, comme vous le feriez vous-même en naviguant dans le jeu.
+Outiiil Renouveau ne collecte aucune donnée pour son auteur et n'envoie rien à un serveur tiers. Elle ne communique qu'avec le jeu Fourmizzz (`*.fourmizzz.fr`), avec votre session de joueur, comme vous le feriez vous-même en naviguant dans le jeu.
 
 ## Données lues
 

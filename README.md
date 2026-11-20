@@ -2,7 +2,7 @@
 
 <br/>
 
-**VERSION 2.0.3 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5), SUR CHROME ET FIREFOX**
+**OUTIIIL RENOUVEAU 2.0.4 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5), SUR CHROME ET FIREFOX**
 
 Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fonctionne de nouveau :
 
@@ -14,7 +14,7 @@ Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fo
 
 Les services de l'ancien site outiiil.fr (carte, graphiques d'historique, traceur, smileys du chat) ne sont plus en ligne : l'extension ne le contacte plus et ces fonctions sont inactives.
 
-L'extension fonctionne aussi sous Firefox (version 128 ou plus récente).
+L'extension fonctionne aussi sous Firefox (version 140 ou plus récente).
 
 Politique de confidentialité : [PRIVACY.md](PRIVACY.md)
 
