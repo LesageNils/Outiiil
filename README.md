@@ -2,7 +2,7 @@
 
 <br/>
 
-**VERSION 2.0.2 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5)**
+**VERSION 2.0.3 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5), SUR CHROME ET FIREFOX**
 
 Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fonctionne de nouveau :
 
@@ -12,7 +12,11 @@ Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fo
 - **Détection de la connexion** : l'extension ne s'exécute plus sur la page d'accueil quand le joueur est déconnecté.
 - **Joueur sans alliance** : l'historique TDC ne tente plus de créer de section sur un forum d'alliance inexistant.
 
-Les services de l'ancien site outiiil.fr (carte, graphiques d'historique, traceur, smileys du chat) ne sont plus en ligne : ces fonctions restent inactives.
+Les services de l'ancien site outiiil.fr (carte, graphiques d'historique, traceur, smileys du chat) ne sont plus en ligne : l'extension ne le contacte plus et ces fonctions sont inactives.
+
+L'extension fonctionne aussi sous Firefox (version 128 ou plus récente).
+
+Politique de confidentialité : [PRIVACY.md](PRIVACY.md)
 
 Installation : télécharger le dépôt, puis dans `chrome://extensions`, activer le mode développeur et « Charger l'extension non empaquetée » sur le dossier.
 

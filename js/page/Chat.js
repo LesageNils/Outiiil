@@ -184,7 +184,6 @@ class PageChat
 		let color = $("#inputCouleur").val();
 		if(color != "000000" && color != "0000000")
 			$("#message").val("[color=#" + color + "]" + $("#message").val() + "[/color]");
-		$("#message").val($("#message").val().replace(/\{outiiil([1-9]|1[0-9]|2[0-6])\}/g, "[img]http://outiiil.fr/images/outiiil/$1.gif[/img]"));
         return this;
 	}
 	/**
@@ -213,11 +212,6 @@ class PageChat
 	*/
 	emoticone()
     {
-		// Ajout des emoticones d'outiiil
-		let ligne = `<div id='listeSmiley80' style='display:none'>`;
-		for(let i = 0 ; ++i < 27 ; ligne += `<img id='smiley_${i}' src='http://outiiil.fr/images/outiiil/${i}.gif'>`);
-		$("#tousLesSmiley0").append(ligne + `</div>`);
-		$("img[id^=smiley_]").click((e) => {$("#message").val($("#message").val() + "{outiiil" + $(e.currentTarget).attr("id").slice(7) + "}");});
         // Modification de la fleche preedante
         $("#smileyPrecedent0").replaceWith(() => {return `<span id="smileyPrecedent0"><img title='Précédent' class='cursor' src='images/bouton/fleche-champs-gauche.gif'/></span>`;});
         // Event sur la fleche preedante

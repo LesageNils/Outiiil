@@ -10,6 +10,8 @@
  */
 !function(){
     const ajaxOrigine = $.ajax, MAX_ESSAI = 6;
+    // sous Firefox, les requêtes d'un content script partent au nom de l'extension : on passe par celles de la page pour que le jeu les traite comme les siennes
+    const xhrPage = typeof content !== "undefined" && content && content.XMLHttpRequest ? () => new content.XMLHttpRequest() : null;
     let file = Promise.resolve();
     $.ajax = function(url, options){
         if(typeof url === "object"){
@@ -18,9 +20,13 @@
         }
         options = $.extend({}, options);
         if(url) options.url = url;
+        // le site outiiil.fr (carte, historiques, traceur) n'existe plus : aucune requête n'y est envoyée
+        if(/^(https?:)?\/\/(www\.)?outiiil\.fr/i.test(options.url || ""))
+            return $.Deferred().reject({status : 0}, "error", "outiiil.fr n'est plus en ligne").promise();
         // seules les requêtes vers le jeu sont mises en file
         if(/^(https?:)?\/\//.test(options.url || "") && !/^(https?:)?\/\/[^\/]*fourmizzz\.fr/i.test(options.url))
             return ajaxOrigine.call($, options);
+        if(xhrPage) options.xhr = xhrPage;
         let defer = $.Deferred(), contexte = options.context || options, succes = options.success, erreur = options.error, fin = options.complete;
         delete options.success;
         delete options.error;

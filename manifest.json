@@ -1,13 +1,14 @@
 {
 	"manifest_version" : 3,
 	"name" : "Outiiil",
-	"version" : "2.0.2",
-	"description" : "Extension pour www.fourmizzz.fr.",
-	"icons" : {"48" : "images/icons/gear_48.png", "96" : "images/icons/gear_96.png"},
+	"version" : "2.0.3",
+	"description" : "Outils de confort pour le jeu Fourmizzz : lanceur de chasses, simulateurs, synthèse de la fourmilière, historique TDC.",
+	"icons" : {"48" : "images/icons/gear_48.png", "96" : "images/icons/gear_96.png", "128" : "images/icons/gear_128.png"},
 	"action" : {"default_icon" : "images/icons/gear_48.png"},
-	"author" : "Hraesvelg",
+	"author" : "Hraesvelg, bdienot, LesageNils",
+	"homepage_url" : "https://github.com/LesageNils/Outiiil",
 	"permissions" : [],
-	"host_permissions" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*", "http://outiiil.fr/"],
+	"host_permissions" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*"],
 	"content_scripts" : [{
 		"matches" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*"],
 		"css" : ["css/outiiil.css", "css/toasts.css", "css/datatables.css"],
@@ -73,7 +74,14 @@
 		]
 	}],
 	"web_accessible_resources" : [{
-		"resources" : ["images/*", "css/*", "js/*"],
+		"resources" : ["images/*"],
 		"matches" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*"]
-	}]
+	}],
+	"browser_specific_settings" : {
+		"gecko" : {
+			"id" : "outiiil@lesagenils.github.io",
+			"strict_min_version" : "128.0",
+			"data_collection_permissions" : {"required" : ["none"]}
+		}
+	}
 }
