@@ -24,7 +24,7 @@ class TraceurJoueur extends Traceur
     {
         return $.ajax({
             type : "get",
-            url : "http://" + Utils.serveur + ".fourmizzz.fr/classement2.php",
+            url : "//" + Utils.serveur + ".fourmizzz.fr/classement2.php",
             data : {
                 "changer_classement" : "ok",
                 "type_classement" : "undefined",

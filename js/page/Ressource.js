@@ -130,10 +130,7 @@ class PageRessource
 		$("#o_chasseEnvoyer").click((e) => {
             if(this._armee.getSommeUnite()){
                 let terrainChasse = $("#o_chasseTDCRep").spinner("value"), nbChasse = $("#o_chasseNbr").spinner("value"), intervalle = $("#o_chasseInt").val() * 1000;
-                $.ajax({url : "http://" + Utils.serveur + ".fourmizzz.fr/AcquerirTerrain.php"}).then((data) => {
-                    let parsed = $("<div/>").append(data);
-                    this._armee.envoyerChasse(terrainChasse, nbChasse, 0, intervalle, parsed.find("#t:last").attr("name") + "=" + parsed.find("#t:last").attr("value"));
-                });
+                this._armee.envoyerChasse(terrainChasse, nbChasse, 0, intervalle);
             }else
                 $.toast({...TOAST_ERROR, text : "Vous n'avez pas d'armée à envoyer."});
             return false;

@@ -176,7 +176,7 @@ class PageAttaquer
             $(e.currentTarget).spinner("value", nombre);
             this.preparerFlood($("#o_floodTDCA").spinner("value"), $("#o_floodTDCB").spinner("value"));
         });
-        $("#o_lanceFlood").click((e) => {this._armee.envoyerFlood(this._cible.id, 0, $("#t:last").attr("name") + "=" + $("#t:last").attr("value"));});
+        $("#o_lanceFlood").click((e) => {this._armee.envoyerFlood(this._cible.id, 0);});
         $("#o_ajouteAttaque").click((e) => {this.ajouterAttaque();});
         $("#o_supprimeAttaque").click((e) => {this.supprimerAttaque();});
     }

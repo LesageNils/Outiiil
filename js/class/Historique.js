@@ -33,7 +33,7 @@ class Historique
         this._tabHistoTdc = {};
         
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
@@ -140,7 +140,7 @@ class Historique
         const defer = $.Deferred();
         
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php`,
             type: 'GET',
             data: { Pseudo: pseudo },
             dataType: 'html',
@@ -456,7 +456,7 @@ class Historique
         // Titre avec icône
         html += `<h3 class="o_titre_cadre" style="background:${couleurs.titre};">
             📈 Historique TDC
-            ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`)}
+            ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`)}
         </h3>`;
         
         // Trier par date (plus récent en premier)
@@ -549,7 +549,7 @@ class Historique
             
             // Cible (avec alliance en dessous)
             html += `<td style="padding: 8px; font-size: 11px; font-weight: bold; color: ${couleurs.texte};">
-                ${entree.cible ? `<a href="http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${encodeURIComponent(entree.cible)}" target="_blank" style="color: ${couleurs.texte}; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${entree.cible}</a>` : '-'}
+                ${entree.cible ? `<a href="//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${encodeURIComponent(entree.cible)}" target="_blank" style="color: ${couleurs.texte}; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${entree.cible}</a>` : '-'}
                 ${entree.alliance ? `<br/><span style="font-size: 9px; color: #6c757d; font-weight: normal;">[${entree.alliance}]</span>` : ''}
             </td>`;
             
@@ -834,7 +834,7 @@ class Historique
         const conversationId = msgId.replace('id_', '');
         
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/messagerie.php`,
             type: 'POST',
             data: {
                 traitement: 'afficher',

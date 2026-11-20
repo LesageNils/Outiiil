@@ -171,7 +171,7 @@ class Alliance
 	*/
     getDescription()
     {
-        return $.ajax({url : "http://" + Utils.serveur + ".fourmizzz.fr/classementAlliance.php?alliance=" + this._tag});
+        return $.ajax({url : "//" + Utils.serveur + ".fourmizzz.fr/classementAlliance.php?alliance=" + this._tag});
     }
     /**
     *
@@ -284,7 +284,7 @@ class Alliance
     {
         return $.ajax({
             type : "post",
-            url : "http://" + Utils.serveur + ".fourmizzz.fr/classementAlliance.php",
+            url : "//" + Utils.serveur + ".fourmizzz.fr/classementAlliance.php",
             data : {
                 "requete" : elt,
                 "recherche" : 1,
@@ -300,7 +300,7 @@ class Alliance
     {
         const defer = $.Deferred();
         
-        $.post(`http://${Utils.serveur}.fourmizzz.fr/alliance.php?Membres`, {
+        $.post(`//${Utils.serveur}.fourmizzz.fr/alliance.php?Membres`, {
             xajax: "membre",
             xajaxr: new Date().getTime()
         }, function(data) {

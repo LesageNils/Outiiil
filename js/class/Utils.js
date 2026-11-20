@@ -4,6 +4,59 @@
  **********************************************************************/
 
 /**
+ * File d'attente des requêtes vers le jeu.
+ * Le serveur n'accepte plus qu'une action à la fois par compte : les requêtes simultanées sont rejetées (503 "Une autre action est en cours sur votre compte").
+ * Toutes les requêtes ajax vers fourmizzz passent donc l'une après l'autre, et sont retentées si le serveur les refuse.
+ */
+!function(){
+    const ajaxOrigine = $.ajax, MAX_ESSAI = 6;
+    let file = Promise.resolve();
+    $.ajax = function(url, options){
+        if(typeof url === "object"){
+            options = url;
+            url = undefined;
+        }
+        options = $.extend({}, options);
+        if(url) options.url = url;
+        // seules les requêtes vers le jeu sont mises en file
+        if(/^(https?:)?\/\//.test(options.url || "") && !/^(https?:)?\/\/[^\/]*fourmizzz\.fr/i.test(options.url))
+            return ajaxOrigine.call($, options);
+        let defer = $.Deferred(), contexte = options.context || options, succes = options.success, erreur = options.error, fin = options.complete;
+        delete options.success;
+        delete options.error;
+        delete options.complete;
+        let terminer = (ok, args) => {
+            if(ok){
+                if(succes) [].concat(succes).forEach((f) => f.apply(contexte, args));
+                defer.resolveWith(contexte, args);
+            }else{
+                if(erreur) [].concat(erreur).forEach((f) => f.apply(contexte, args));
+                defer.rejectWith(contexte, args);
+            }
+            if(fin) [].concat(fin).forEach((f) => f.call(contexte, ok ? args[2] : args[0], args[1]));
+        };
+        file = file.then(() => new Promise((suivant) => {
+            let tenter = (essai) => {
+                ajaxOrigine.call($, $.extend({}, options)).then((data, statut, xhr) => {
+                    terminer(true, [data, statut, xhr]);
+                    suivant();
+                }, (xhr, statut, message) => {
+                    // le compte est occupé, on attend un peu avant de retenter
+                    if(xhr.status == 503 && essai < MAX_ESSAI)
+                        setTimeout(() => tenter(essai + 1), 400 * essai);
+                    else{
+                        terminer(false, [xhr, statut, message]);
+                        suivant();
+                    }
+                });
+            };
+            tenter(1);
+        }));
+        return defer.promise();
+    };
+}();
+
+/**
  * Données globales du projet, de fourmizzz et des fonctions utilisables partout dans le code.
  *
  * @class Utils

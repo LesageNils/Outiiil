@@ -569,7 +569,7 @@ class BoiteComptePlus
         
         if (Object.keys(membres).length === 0) {
             section.html(`
-                <button style="width:100%; font-size:12px; padding:5px;" onclick="location.href='http://${Utils.serveur}.fourmizzz.fr/alliance.php?Membres';">
+                <button style="width:100%; font-size:12px; padding:5px;" onclick="location.href='//${Utils.serveur}.fourmizzz.fr/alliance.php?Membres';">
                     <div class='mini_icone_info'/> Membres Alliance<br>
                     <small>Mise à jour nécessaire...<br>Cliquez <b>ici</b></small>
                 </button>
@@ -582,7 +582,7 @@ class BoiteComptePlus
 
         let html = `
             <div style="width:95%; padding:5px;">
-            <button style='width:100%; background-color:rgb(54, 52, 52); color:white; height:24px; margin-top:7px; cursor: pointer; border-radius:4px;' onclick=\"location.href='http://"+serveur+".fourmizzz.fr/alliance.php?Membres';\">Membres de l'alliance</button>
+            <button style='width:100%; background-color:rgb(54, 52, 52); color:white; height:24px; margin-top:7px; cursor: pointer; border-radius:4px;' onclick=\"location.href='//"+serveur+".fourmizzz.fr/alliance.php?Membres';\">Membres de l'alliance</button>
             <div style="max-height:200px; overflow-y:auto; border-radius:4px; padding:3px;">
         `;
 
@@ -602,7 +602,7 @@ class BoiteComptePlus
             
             html += `
                 <button title="${pseudo}" 
-                        onclick="location.href='http://${Utils.serveur}.fourmizzz.fr/Membre.php?Pseudo=${pseudo}';" 
+                        onclick="location.href='//${Utils.serveur}.fourmizzz.fr/Membre.php?Pseudo=${pseudo}';" 
                         style="border-radius:6px; border: 0px solid black; border-left: solid 6px ${couleurEtat}; font-size:10px; text-align:left; width:95%; cursor:pointer; margin-bottom:2px; ${estJoueurActuel ? "background-color: hsl(234, 83.00%, 67.60%);" : ""}">
                     <span style="font-size:12px; font-weight:bold;">
                         ${membre.colo || ""}${estJoueurActuel ? "<font color='blue'>" : ""}${pseudo.toUpperCase()}

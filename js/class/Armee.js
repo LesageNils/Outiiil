@@ -107,7 +107,7 @@ class Armee
 	*/
 	getArmee()
 	{
-		return $.ajax({url : "http://" + Utils.serveur + ".fourmizzz.fr/Armee.php"});
+		return $.ajax({url : "//" + Utils.serveur + ".fourmizzz.fr/Armee.php"});
 	}
     /**
     *
@@ -684,39 +684,60 @@ class Armee
 	* @private
 	* @method envoyerChasse
 	* @param {Integer} indice
-	* @param {String} securite
 	*/
-	envoyerChasse(terrainChasse, nbChasse, indice, intervalle, securite)
+	envoyerChasse(terrainChasse, nbChasse, indice, intervalle)
 	{
         if(indice < nbChasse){
-            let donnees = {};
-            donnees["" + securite.split("=")[0]] = securite.split("=")[1];
-            donnees["ChoixArmee"] = "1";
-            donnees["AcquerirTerrain"] = terrainChasse;
-            donnees["unite1"] = this._repartition[indice][0];
-            donnees["unite2"] = this._repartition[indice][1];
-            donnees["unite3"] = this._repartition[indice][2];
-            donnees["unite4"] = this._repartition[indice][3];
-            donnees["unite5"] = this._repartition[indice][4];
-            donnees["unite6"] = this._repartition[indice][5];
-            donnees["unite7"] = this._repartition[indice][7];
-            donnees["unite8"] = this._repartition[indice][8];
-            donnees["unite9"] = this._repartition[indice][9];
-            donnees["unite10"] = this._repartition[indice][10];
-            donnees["unite11"] = this._repartition[indice][12];
-            donnees["unite12"] = this._repartition[indice][13];
-            donnees["unite13"] = this._repartition[indice][11];
-            donnees["unite14"] = this._repartition[indice][6];
-            // Requete
-            $.post("http://" + Utils.serveur + ".fourmizzz.fr/AcquerirTerrain.php", donnees, (data) => {
-                if(data.indexOf("La chasse est lancée.") > -1)
-                    $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='green'>${indice + 1}</td><td colspan='14' class='green'>La chasse est lancée.</td>`);
-                else
-                    $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='red'>${indice + 1}</td><td colspan='14' class='red'>La chasse n'a pas pu être lancée.</td>`);
-                setTimeout(() => {this.envoyerChasse(terrainChasse, nbChasse, ++indice, intervalle, securite);}, intervalle);
+            // le jeton de sécurité "t" n'est valable que pour un seul lancement, on en récupère un nouveau avant chaque chasse
+            $.ajax({url : "//" + Utils.serveur + ".fourmizzz.fr/AcquerirTerrain.php"}).then((page) => {
+                let jeton = $("<div/>").append(page).find("input#t:last");
+                if(!jeton.length){
+                    $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='red'>${indice + 1}</td><td colspan='14' class='red'>Impossible de récupérer le jeton de sécurité.</td>`);
+                    setTimeout(() => {this.envoyerChasse(terrainChasse, nbChasse, ++indice, intervalle);}, intervalle);
+                    return;
+                }
+                this.posterChasse(terrainChasse, nbChasse, indice, intervalle, jeton.attr("name"), jeton.attr("value"));
+            }, () => {
+                $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='red'>${indice + 1}</td><td colspan='14' class='red'>Impossible de récupérer le jeton de sécurité.</td>`);
+                setTimeout(() => {this.envoyerChasse(terrainChasse, nbChasse, ++indice, intervalle);}, intervalle);
             });
         }else // on a fini, on recharge la page
             location.reload();
+	}
+    /**
+	* Poste une chasse avec le jeton de sécurité fourni.
+    *
+	* @private
+	* @method posterChasse
+	*/
+	posterChasse(terrainChasse, nbChasse, indice, intervalle, nomJeton, valeurJeton)
+	{
+        let donnees = {};
+        donnees[nomJeton] = valeurJeton;
+        donnees["ChoixArmee"] = "1";
+        donnees["AcquerirTerrain"] = terrainChasse;
+        donnees["unite1"] = this._repartition[indice][0];
+        donnees["unite2"] = this._repartition[indice][1];
+        donnees["unite3"] = this._repartition[indice][2];
+        donnees["unite4"] = this._repartition[indice][3];
+        donnees["unite5"] = this._repartition[indice][4];
+        donnees["unite6"] = this._repartition[indice][5];
+        donnees["unite7"] = this._repartition[indice][7];
+        donnees["unite8"] = this._repartition[indice][8];
+        donnees["unite9"] = this._repartition[indice][9];
+        donnees["unite10"] = this._repartition[indice][10];
+        donnees["unite11"] = this._repartition[indice][12];
+        donnees["unite12"] = this._repartition[indice][13];
+        donnees["unite13"] = this._repartition[indice][11];
+        donnees["unite14"] = this._repartition[indice][6];
+        // Requete
+        $.post("//" + Utils.serveur + ".fourmizzz.fr/AcquerirTerrain.php", donnees, (data) => {
+            if(data.indexOf("La chasse est lancée.") > -1)
+                $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='green'>${indice + 1}</td><td colspan='14' class='green'>La chasse est lancée.</td>`);
+            else
+                $("#o_simulationChasse tr:eq(" + (indice + 1) + ")").html(`<td class='red'>${indice + 1}</td><td colspan='14' class='red'>La chasse n'a pas pu être lancée.</td>`);
+            setTimeout(() => {this.envoyerChasse(terrainChasse, nbChasse, ++indice, intervalle);}, intervalle);
+        });
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -901,43 +922,64 @@ class Armee
 	* @private
 	* @method envoyerFlood
 	* @param {Integer} indice
-	* @param {String} securite
 	*/
-	envoyerFlood(idCible, indice, securite)
+	envoyerFlood(idCible, indice)
 	{
         // si on a encore des attaques à lancer
         if(indice < this._floods.length){
             // si l'attaque est différente de 0
             if(this._floods[indice]){
-                let donnees = {};
-                donnees["" + securite.split("=")[0]] = securite.split("=")[1];
-                donnees["ChoixArmee"] = "1";
-                donnees["lieu"] = "1"; //$("input[name=o_domeFlood]:checked").val() == "Oui" ? "2" : "1";
-                donnees["pseudoCible"] = $("input[name=pseudoCible]").val();
-                donnees["unite1"] = this._repartition[indice][0];
-                donnees["unite2"] = this._repartition[indice][1];
-                donnees["unite3"] = this._repartition[indice][2];
-                donnees["unite4"] = this._repartition[indice][3];
-                donnees["unite5"] = this._repartition[indice][4];
-                donnees["unite6"] = this._repartition[indice][5];
-                donnees["unite7"] = this._repartition[indice][7];
-                donnees["unite8"] = this._repartition[indice][8];
-                donnees["unite9"] = this._repartition[indice][9];
-                donnees["unite10"] = this._repartition[indice][10];
-                donnees["unite11"] = this._repartition[indice][12];
-                donnees["unite12"] = this._repartition[indice][13];
-                donnees["unite13"] = this._repartition[indice][11];
-                donnees["unite14"] = this._repartition[indice][6];
-                // Requete
-                $.post("http://" + Utils.serveur + ".fourmizzz.fr/ennemie.php?Attaquer=" + idCible, donnees, (data) => {
-                    let res = $("<div/>").append(data).find("center:last").text();
-                    $("#o_simulationFlood tr:eq(" + (indice + 2) + ")").addClass(res.indexOf("Vos troupes sont en marche") == -1 ? "red" : "green");
-                    setTimeout(() => {this.envoyerFlood(idCible, ++indice, securite);}, 1000);
+                // le jeton de sécurité "t" n'est valable que pour un seul lancement, on en récupère un nouveau avant chaque attaque
+                $.ajax({url : "//" + Utils.serveur + ".fourmizzz.fr/ennemie.php?Attaquer=" + idCible}).then((page) => {
+                    let jeton = $("<div/>").append(page).find("input#t:last");
+                    if(!jeton.length){
+                        $("#o_simulationFlood tr:eq(" + (indice + 2) + ")").addClass("red");
+                        setTimeout(() => {this.envoyerFlood(idCible, ++indice);}, 1000);
+                        return;
+                    }
+                    this.posterFlood(idCible, indice, jeton.attr("name"), jeton.attr("value"));
+                }, () => {
+                    $("#o_simulationFlood tr:eq(" + (indice + 2) + ")").addClass("red");
+                    setTimeout(() => {this.envoyerFlood(idCible, ++indice);}, 1000);
                 });
             }else // on passe à l'attaque suivante
-                this.envoyerFlood(idCible, ++indice, securite);
+                this.envoyerFlood(idCible, ++indice);
         }else // on a fini, on recharge la page
             location.reload();
+	}
+    /**
+	* Poste une attaque avec le jeton de sécurité fourni.
+    *
+	* @private
+	* @method posterFlood
+	*/
+	posterFlood(idCible, indice, nomJeton, valeurJeton)
+	{
+        let donnees = {};
+        donnees[nomJeton] = valeurJeton;
+        donnees["ChoixArmee"] = "1";
+        donnees["lieu"] = "1"; //$("input[name=o_domeFlood]:checked").val() == "Oui" ? "2" : "1";
+        donnees["pseudoCible"] = $("input[name=pseudoCible]").val();
+        donnees["unite1"] = this._repartition[indice][0];
+        donnees["unite2"] = this._repartition[indice][1];
+        donnees["unite3"] = this._repartition[indice][2];
+        donnees["unite4"] = this._repartition[indice][3];
+        donnees["unite5"] = this._repartition[indice][4];
+        donnees["unite6"] = this._repartition[indice][5];
+        donnees["unite7"] = this._repartition[indice][7];
+        donnees["unite8"] = this._repartition[indice][8];
+        donnees["unite9"] = this._repartition[indice][9];
+        donnees["unite10"] = this._repartition[indice][10];
+        donnees["unite11"] = this._repartition[indice][12];
+        donnees["unite12"] = this._repartition[indice][13];
+        donnees["unite13"] = this._repartition[indice][11];
+        donnees["unite14"] = this._repartition[indice][6];
+        // Requete
+        $.post("//" + Utils.serveur + ".fourmizzz.fr/ennemie.php?Attaquer=" + idCible, donnees, (data) => {
+            let res = $("<div/>").append(data).find("center:last").text();
+            $("#o_simulationFlood tr:eq(" + (indice + 2) + ")").addClass(res.indexOf("Vos troupes sont en marche") == -1 ? "red" : "green");
+            setTimeout(() => {this.envoyerFlood(idCible, ++indice);}, 1000);
+        });
 	}
 
     /* ------------------------------------------------------------------ */

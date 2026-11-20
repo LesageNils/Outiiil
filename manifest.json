@@ -1,15 +1,15 @@
 {
 	"manifest_version" : 3,
 	"name" : "Outiiil",
-	"version" : "2.0.1.1",
+	"version" : "2.0.2",
 	"description" : "Extension pour www.fourmizzz.fr.",
 	"icons" : {"48" : "images/icons/gear_48.png", "96" : "images/icons/gear_96.png"},
 	"action" : {"default_icon" : "images/icons/gear_48.png"},
 	"author" : "Hraesvelg",
 	"permissions" : [],
-	"host_permissions" : ["http://*.fourmizzz.fr/*", "http://outiiil.fr/"],
+	"host_permissions" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*", "http://outiiil.fr/"],
 	"content_scripts" : [{
-		"matches" : ["http://*.fourmizzz.fr/*"],
+		"matches" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*"],
 		"css" : ["css/outiiil.css", "css/toasts.css", "css/datatables.css"],
 		"js" : [
 			"js/lib/jquery_3.2.1.js",
@@ -74,6 +74,6 @@
 	}],
 	"web_accessible_resources" : [{
 		"resources" : ["images/*", "css/*", "js/*"],
-		"matches" : ["http://*.fourmizzz.fr/*"]
+		"matches" : ["http://*.fourmizzz.fr/*", "https://*.fourmizzz.fr/*"]
 	}]
 }

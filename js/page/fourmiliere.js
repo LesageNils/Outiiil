@@ -261,7 +261,7 @@ class PageFourmiliere {
                 ">
                     <h3 class="o_titre_cadre" style="background:${couleurs.titre};">
                         <div class='mini_icone_info'/> Informations Générales
-                        ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/fourmiliere.php`)}
+                        ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/fourmiliere.php`)}
                     </h3>
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr><td style="padding: 4px; font-weight: bold;">Pseudo:</td><td style="padding: 4px;">${monProfil.pseudo}</td></tr>
@@ -287,7 +287,7 @@ class PageFourmiliere {
                 ">
                     <h3 class="o_titre_cadre" style="background:${couleurs.titre};">
                         <div class='mini_icone_ponte'/> Reine
-                        ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php`)}
+                        ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php`)}
                     </h3>
                     ${this.genererBlocReine()}
                 </div>
@@ -302,7 +302,7 @@ class PageFourmiliere {
                 ">
                     <h3 class="o_titre_cadre" style="background:${couleurs.titre};">
                         <div class='mini_icone_ressources'/> Ressources
-                        ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php`)}
+                        ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php`)}
                     </h3>
                     <div style="margin-bottom: 20px;">
                         ${this.genererTableauRessourcesComplet()}
@@ -320,7 +320,7 @@ class PageFourmiliere {
                 ">
                     <h3 class="o_titre_cadre" style="background:${couleurs.titre};">
                         <div class='mini_icone_construction'/> Constructions 
-                        ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`)}
+                        ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`)}
                     </h3>
                     <div style="text-align: center; margin: 8px 0; font-size: 12px; font-weight: bold; color: ${couleurs.texte};">
                         Niveau global: ${this.calculerNiveauConstruction()}
@@ -338,7 +338,7 @@ class PageFourmiliere {
                 ">
                     <h3 class="o_titre_cadre" style="background:${couleurs.titre};">
                         <div class='mini_icone_recherche'/> Laboratoire
-                        ${this.genererBoutonOuvrir(`http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`)}
+                        ${this.genererBoutonOuvrir(`//${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`)}
                     </h3>
                     <div style="text-align: center; margin: 8px 0; font-size: 12px; font-weight: bold; color: ${couleurs.texte};">
                         Niveau global: ${this.calculerNiveauTechnologique()}
@@ -436,7 +436,7 @@ class PageFourmiliere {
         this.analyserProductionLocale();
 
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
@@ -470,7 +470,7 @@ class PageFourmiliere {
         const defer = $.Deferred();
 
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
@@ -508,7 +508,7 @@ class PageFourmiliere {
         const defer = $.Deferred();
 
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/construction.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
@@ -549,7 +549,7 @@ class PageFourmiliere {
         const defer = $.Deferred();
 
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/laboratoire.php`,
             type: 'GET',
             dataType: 'html',
             success: (page) => {
@@ -628,7 +628,7 @@ class PageFourmiliere {
         const tab_cles = ['Alliance', 'Etat', 'Nombre de Colonie', 'Localisation', 'Terrain', 'Fourmilière', 'Technologie', 'Combat'];
 
         $.ajax({
-            url: `http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${monProfil.pseudo}`,
+            url: `//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Membre.php?Pseudo=${monProfil.pseudo}`,
             type: 'GET',
             dataType: 'html',
             success: (response) => {
@@ -904,8 +904,8 @@ class PageFourmiliere {
             <thead>
                 <tr style="font-weight: bold; font-size: 12px; border-bottom: solid #c9ad63 2px;">
                     <td style="width: 200px; padding: 8px;">Stock</td>
-                    <td style="text-align: center; padding: 8px;"><img src="http://s4.fourmizzz.fr/images/icone/icone_pomme.png" height="18">${jaugeN}</td>
-                    <td style="text-align: center; padding: 8px;"><img src="http://s4.fourmizzz.fr/images/icone/icone_bois.gif" height="18">${jaugeM}</td>
+                    <td style="text-align: center; padding: 8px;"><img src="//s4.fourmizzz.fr/images/icone/icone_pomme.png" height="18">${jaugeN}</td>
+                    <td style="text-align: center; padding: 8px;"><img src="//s4.fourmizzz.fr/images/icone/icone_bois.gif" height="18">${jaugeM}</td>
                 </tr>
             </thead>
             <tbody>
@@ -961,7 +961,7 @@ class PageFourmiliere {
      */
     genererJaugeStock(stock, capacite, pourcentage, couleur) {
         return `
-        <a href="http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php" target="_blank" style="text-decoration: none; color: inherit;">
+        <a href="//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Ressources.php" target="_blank" style="text-decoration: none; color: inherit;">
             <span style="color: ${couleur}; font-weight: bold;">${numeral(stock).format('0,0')}</span>
             <div style="width: 95%; height: 15px; border: solid black 1px; display: block; background: #676b51; text-align: left; margin: 2px 0;">
                 <div style="background: ${couleur}; position: relative; left: 0px; top: 0px; height: 100%; border-right: solid black 1px; text-align: center; color: white; width: ${Math.min(pourcentage, 100)}%; font-size: 10px; line-height: 15px;">
@@ -1036,7 +1036,7 @@ class PageFourmiliere {
         return `
         <div style="font-size: 12px;">
             <div style="margin-bottom: 10px;">
-                <button onclick="window.open('http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php', '_blank')" 
+                <button onclick="window.open('//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php', '_blank')" 
                         style="width: 100%; padding: 8px; background: #9C27B0; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer;">
                     👑 Aller à la Reine
                 </button>
@@ -1045,7 +1045,7 @@ class PageFourmiliere {
             <div style="background: #fff3cd; padding: 8px; border-radius: 4px; border-left: 3px solid #ffc107;">
                 <small style="color: #856404;">
                     <strong>⚠️ Aucune donnée :</strong> Aucune ponte en cours détectée.<br/>
-                    Rendez-vous sur la page <a href="http://${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php" target="_blank">Reine</a> 
+                    Rendez-vous sur la page <a href="//${Utils.serveur.toLowerCase()}.fourmizzz.fr/Reine.php" target="_blank">Reine</a> 
                     pour lancer une ponte, puis revenez sur cette page.
                 </small>
             </div>

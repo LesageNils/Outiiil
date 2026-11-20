@@ -88,7 +88,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "ajoutCategorie",
                 "xajaxargs[]": `<xjxquery><q>nom=${nomSection}</q></xjxquery>`,
@@ -110,7 +110,7 @@ class PageForum
         // D'abord, essayer de récupérer la liste des sections via une requête POST
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "callGetForum",
                 "xajaxr": moment().valueOf()
@@ -179,7 +179,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "renommerCategorie",
                 "xajaxargs[]": `<xjxquery><q>nom=${nomSection}&type=${categorie}&ID_cat=${id}&del=Supprimer</q></xjxquery>`,
@@ -199,7 +199,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "callGetForum",
                 "xajaxargs[]": id,
@@ -226,7 +226,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "envoiNouveauSujet",
                 "xajaxargs[]": `<xjxquery><q>cat=${id}&sujet=${nomSujet}&message=${encodeURIComponent(contenu)}&type=${type}&modifiable=envoyer&send=Envoyer&question=&reponse[]=&reponse[]=&reponse[]=</q></xjxquery>`,
@@ -248,7 +248,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "envoiEditTopic",
                 "xajaxargs[]": `<xjxquery><q>IDTopic=${id}&sujet=${nomSujet}&message=${encodeURIComponent(contenu)}&modifiable=envoyer&send=Envoyer</q></xjxquery>`,
@@ -268,7 +268,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "callGetTopic",
                 "xajaxargs[]": id,
@@ -289,7 +289,7 @@ class PageForum
     {
         return $.ajax({
             type: "post",
-            url: `http://${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
+            url: `//${Utils.serveur}.fourmizzz.fr/alliance.php?forum_menu`,
             data: {
                 "xajax": "envoiNouveauMessage",
                 "xajaxargs[]": `<xjxquery><q>topic=${id}&message=${message}&send=Envoyer</q></xjxquery>`,
@@ -634,14 +634,24 @@ class PageForum
     _rechercherOuCreerSection()
     {
         return new Promise((resolve) => {
+            // Sans alliance, pas de forum : inutile de chercher ou de créer une section
+            if (!Utils.alliance || Utils.alliance === "0") {
+                resolve("0");
+                return;
+            }
             this.chercherSection("Outiiil_HistoTDC").then((idSection) => {
                 if (idSection === "0") {
                     // Créer la section si elle n'existe pas
                     this.creerSection("Outiiil_HistoTDC").then((data) => {
                         const response = $("<div/>").append($(data).find("cmd:eq(1)").html());
-                        const newIdSection = $(response).find(`input[value='Outiiil_HistoTDC']`)
-                            .parent().attr("id").match(/\d+/)[0];
-                        
+                        const idParent = $(response).find(`input[value='Outiiil_HistoTDC']`).parent().attr("id");
+                        // La section n'a pas été créée (droits insuffisants sur le forum)
+                        if (!idParent) {
+                            resolve("0");
+                            return;
+                        }
+                        const newIdSection = idParent.match(/\d+/)[0];
+
                         
                         // Enregistrer l'ID dans les paramètres
                         this._enregistrerIdSection(newIdSection);

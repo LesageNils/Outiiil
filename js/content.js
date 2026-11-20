@@ -6,7 +6,7 @@
 /**
 * CONSTANTE
 */
-const VERSION = "2.0.1.1";
+const VERSION = "2.0.2";
 const CONSTRUCTION = ["Champignonnière", "Entrepôt de Nourriture", "Entrepôt de Matériaux", "Couveuse", "Solarium", "Laboratoire", "Salle d'analyse", "Salle de combat", "Caserne", "Dôme", "Loge Impériale", "Etable à pucerons", "Etable à cochenilles"];
 const RECHERCHE = ["Technique de ponte", "Bouclier Thoracique", "Armes", "Architecture", "Communication avec les animaux", "Vitesse de chasse", "Vitesse d'attaque", "Génétique", "Acide", "Poison"];
 const COUT_CONSTUCTION = [90, 600, 600, 600, 2000, 1400, 1400, 300, 800, 3500, 5000, 1500, 10000];
@@ -222,9 +222,9 @@ const DATEPICKER_OPTION = {
 */
 !function () {
     // si l'utilisateur est identifié
-    if ($(".boite_connexion_titre:first").text() != "Connexion") {
+    if ($(".boite_connexion_titre:first").text().trim() != "Connexion") {
         // Modification du theme jquery humanity
-        $("head").append("<link rel='stylesheet' href='http://code.jquery.com/ui/1.12.1/themes/humanity/jquery-ui.min.css'/>");
+        $("head").append("<link rel='stylesheet' href='https://code.jquery.com/ui/1.12.1/themes/humanity/jquery-ui.min.css'/>");
         // Chargement du language francais
         numeral.locale("fr");
         moment.locale("fr");
@@ -360,7 +360,7 @@ window.PageForum = PageForum;
 
             //Ajout du menu zorgzzz
 
-            $('#boutonAide').empty().append('<li><a id="boutonZRG" class="boutonSansColonne" href="http://' + Utils.serveur + '.fourmizzz.fr/fourmiliere.php"><span style="background: url(chrome-extension://' + chrome.runtime.id + '/images/zrg.png) left center no-repeat; height: 26px; width: 24px; vertical-align: -7px; margin-right: 2px; display: inline-block; margin-top: 2px;"></span>ZRG</a></li>');
+            $('#boutonAide').empty().append('<li><a id="boutonZRG" class="boutonSansColonne" href="//' + Utils.serveur + '.fourmizzz.fr/fourmiliere.php"><span style="background: url(chrome-extension://' + chrome.runtime.id + '/images/zrg.png) left center no-repeat; height: 26px; width: 24px; vertical-align: -7px; margin-right: 2px; display: inline-block; margin-top: 2px;"></span>ZRG</a></li>');
             var zrg_contenu_html = '<li><a class="boutonMaFourmiliere" href="fourmiliere.php"><span></span>Synthese</a></li>'
             
             //tableau vigipirate
