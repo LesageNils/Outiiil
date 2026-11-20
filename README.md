@@ -2,6 +2,22 @@
 
 <br/>
 
+**VERSION 2.0.2 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5)**
+
+Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fonctionne de nouveau :
+
+- **HTTPS** : le jeu est servi en `https://`. L'extension s'active désormais sur les pages en https et toutes ses requêtes vers le jeu suivent le protocole de la page.
+- **Jeton de sécurité à usage unique** : le paramètre `t` des formulaires n'est plus réutilisable. Le lanceur de chasses et le lanceur de flood récupèrent un jeton neuf avant chaque envoi.
+- **Une action à la fois par compte** : le serveur refuse les requêtes simultanées (« Une autre action est en cours sur votre compte »). Les requêtes de l'extension vers le jeu sont mises en file et passent l'une après l'autre, avec nouvel essai si le serveur est occupé.
+- **Détection de la connexion** : l'extension ne s'exécute plus sur la page d'accueil quand le joueur est déconnecté.
+- **Joueur sans alliance** : l'historique TDC ne tente plus de créer de section sur un forum d'alliance inexistant.
+
+Les services de l'ancien site outiiil.fr (carte, graphiques d'historique, traceur, smileys du chat) ne sont plus en ligne : ces fonctions restent inactives.
+
+Installation : télécharger le dépôt, puis dans `chrome://extensions`, activer le mode développeur et « Charger l'extension non empaquetée » sur le dossier.
+
+_________________________________________________________________________
+
 **MISE A JOUR COMPATIBLE AVEC LES DERNIERES VERSIONS DE CHROME**
 
 L'objectif premier de ce fork est de rendre de nouveau compatible cette extension avec la dernière version de chrome.
