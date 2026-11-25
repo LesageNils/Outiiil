@@ -81,6 +81,21 @@ class Utils
         return location.hostname.split(".")[0].toUpperCase();
     }
     /**
+    * Renvoie l'indice d'une unité dans NOM_UNITE à partir de son nom tel qu'écrit par le jeu.
+    * La comparaison ignore la casse, les accents, le type d'apostrophe et le pluriel ("Tanks d’Élites" = "Tank d’élite").
+    *
+    * @static
+    * @method indexUnite
+    * @param {String} nom
+    * @return {Integer} l'indice de l'unité, -1 si elle est inconnue.
+    */
+    static indexUnite(nom)
+    {
+        let normaliser = (texte) => texte.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’`´]/g, "'").replace(/s\b/g, "").replace(/\s+/g, " ").trim();
+        let cible = normaliser(nom || "");
+        return NOM_UNITE.findIndex((elt) => normaliser(elt) == cible);
+    }
+    /**
     *
     */
     static get alliance()

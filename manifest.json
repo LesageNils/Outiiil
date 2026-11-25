@@ -1,7 +1,7 @@
 {
 	"manifest_version" : 3,
 	"name" : "Outiiil Renouveau",
-	"version" : "2.0.4",
+	"version" : "2.0.5",
 	"description" : "Outils de confort pour le jeu Fourmizzz : lanceur de chasses, simulateurs, synthèse de la fourmilière, historique TDC.",
 	"icons" : {"48" : "images/icons/gear_48.png", "96" : "images/icons/gear_96.png", "128" : "images/icons/gear_128.png"},
 	"action" : {"default_icon" : "images/icons/gear_48.png"},

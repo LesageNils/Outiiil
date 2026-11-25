@@ -417,7 +417,7 @@ class BoiteComptePlus
             let table = "<table>", tmpExp = moment(this._ponte[0].exp), nombreU, tempsU;
             for(let i = 0 ; i < this._ponte.length ; i++){
                 nombreU = this._ponte[i]["nombre"];
-                tempsU = nombreU > 1 ? TEMPS_UNITE[NOM_UNITES.indexOf(this._ponte[i].unite)] : TEMPS_UNITE[NOM_UNITE.indexOf(this._ponte[i].unite)];
+                tempsU = TEMPS_UNITE[Utils.indexUnite(this._ponte[i].unite)];
                 if(i == 0) nombreU = Math.ceil((moment(this._ponte[i].exp).diff(moment()) / 1000) / (tempsU * Math.pow(0.9, monProfil.getTDP())));
                 table += `<tr><td class='gras right'>${(nombreU < 1000 ? nombreU : numeral(nombreU).format("0[.]00a"))}</td><td>${this._ponte[i].unite}</td><td>${moment(this._ponte[i].exp).add(1, "minute").startOf("minute").format("D MMM YYYY à HH[h]mm")}</td></tr>`;
             }

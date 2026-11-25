@@ -117,7 +117,7 @@ class Armee
         $(html).find(".simulateur tr[align='center']:lt(14)").each((i, elt) => {
             let label = $(elt).find(".pas_sur_telephone").text();
             if(label)
-				$(elt).find("td span").each((i2, elt2) => {this._unite[NOM_UNITE.indexOf(label) - 1] += parseInt($(elt2).text().replace(/[^0-9]/g, ''));});
+				$(elt).find("td span").each((i2, elt2) => {this._unite[Utils.indexUnite(label) - 1] += parseInt($(elt2).text().replace(/[^0-9]/g, ''));});
         });
 		this._nbrJSN = this._unite[0];
         return this;

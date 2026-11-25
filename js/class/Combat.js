@@ -418,7 +418,7 @@ class Combat
 		res.unite = armee.unite.slice(0);
 		// Pour chaques types d'unitées qui ont XP.
 		for(let i = 1, tmp = this._rc.split("- "), tableXP = [-1, 1, 2, -1, 4, 9, 6, -1, 8, -1, -1, 11, -1, 13, -1] ; i < tmp.length ; i++){
-			let uniteXP = NOM_UNITE.indexOf(tmp[i].replace(/[0-9]/g, '').split("sont")[0].replace(/s /g, ' ').trim()), qteXP = parseInt(tmp[i].replace(/ /g, ''));
+			let uniteXP = Utils.indexUnite(tmp[i].replace(/[0-9]/g, '').split("sont")[0].replace(/s /g, ' ').trim()), qteXP = parseInt(tmp[i].replace(/ /g, ''));
 			res.unite[uniteXP - 1] -= qteXP;
 			res.unite[tableXP[uniteXP]] += qteXP;
 		}
