@@ -2,7 +2,7 @@
 
 <br/>
 
-**OUTIIIL RENOUVEAU 2.0.5 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5), SUR CHROME ET FIREFOX**
+**OUTIIIL RENOUVEAU 2.0.6 : COMPATIBLE AVEC LE NOUVEAU MOTEUR DE FOURMIZZZ (S4, S5), SUR CHROME ET FIREFOX**
 
 Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fonctionne de nouveau :
 
@@ -11,6 +11,8 @@ Fourmizzz a changé de moteur. Cette version corrige l'extension pour qu'elle fo
 - **Une action à la fois par compte** : le serveur refuse les requêtes simultanées (« Une autre action est en cours sur votre compte »). Les requêtes de l'extension vers le jeu sont mises en file et passent l'une après l'autre, avec nouvel essai si le serveur est occupé.
 - **Détection de la connexion** : l'extension ne s'exécute plus sur la page d'accueil quand le joueur est déconnecté.
 - **Unités d'élite** : le jeu écrit désormais « d’Élite » ; les noms d'unités sont comparés sans tenir compte des majuscules, des accents ni du pluriel, et les unités d'élite sont de nouveau comptées.
+- **Messagerie et chat** : l'analyse des rapports de chasse et de combat, la copie des rapports et le bouton « citer » du chat dépendaient d'un événement que les navigateurs ne déclenchent plus ; ils fonctionnent de nouveau.
+- **Rapports de combat** : les niveaux d'armes et de bouclier déduits du combat (ennemi et vous) sont affichés en une ligne sous chaque rapport.
 - **Joueur sans alliance** : l'historique TDC ne tente plus de créer de section sur un forum d'alliance inexistant.
 
 Les services de l'ancien site outiiil.fr (carte, graphiques d'historique, traceur, smileys du chat) ne sont plus en ligne : l'extension ne le contacte plus et ces fonctions sont inactives.

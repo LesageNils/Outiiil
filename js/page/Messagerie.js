@@ -49,36 +49,36 @@ class PageMessagerie
     analyseMessage()
     {
         // Listener pour l'ouverture des rapports de combat ou de chasse.
-        $("#corps_messagerie").on("DOMNodeInserted", (e) => {
+        Utils.surInsertion("#corps_messagerie", (cible) => {
             // Si on ouvre le message pour la première fois
-            if($(e.target).hasClass("contenu_conversation")){
+            if($(cible).hasClass("contenu_conversation")){
                 // correction pour chrome
                 $(".message").removeAttr("colspan");
-                let titreMess = $(e.target).prev().prev().find(".td_objet").text();
+                let titreMess = $(cible).prev().prev().find(".td_objet").text();
                 // Si on est sur des rapports des chasses
                 if(titreMess.includes("chasseuses ont conquis")){
-                    let conv = $(e.target).prev().prev().attr("id").split("_")[1];
-                    $(e.target).find(".message").each((i, elt) => {this.analyseChasse(conv, $(elt).parent().attr("id"), $(elt).text());});
+                    let conv = $(cible).prev().prev().attr("id").split("_")[1];
+                    $(cible).find(".message").each((i, elt) => {this.analyseChasse(conv, $(elt).parent().attr("id"), $(elt).text());});
                     // on affiche un bilan que lorsqu'il y a plus d'une chasse
-                    if($(e.target).find(".message").length > 1) this.analyseChasses(conv);
+                    if($(cible).find(".message").length > 1) this.analyseChasses(conv);
                 // Si on est sur des rapports de combat
                 }else if(titreMess.includes("Attaque réussie") || titreMess.includes("Attaque échouée") || titreMess.includes("Invasion") || titreMess.includes("Rebellion")){
-                    $(e.target).find(".message").each((i, elt) => {this.analyseCombat($(elt).parent().attr("id"), $(elt).prev().text(), $(elt).text());});
-                    this.optionMessage($(e.target).find(".message:first").parent().attr("id"));
+                    $(cible).find(".message").each((i, elt) => {this.analyseCombat($(elt).parent().attr("id"), $(elt).prev().text(), $(elt).text());});
+                    this.optionMessage($(cible).find(".message:first").parent().attr("id"));
                 }
                 // Ajout des balises de mise en forme pour envoyer des messages
-                if($(e.target).find("div[id^='champ_bbcode_']").length && !Utils.comptePlus)
-                    this.plus($(e.target).find("div[id^='champ_bbcode_']").attr("id").match(/\d+$/));
+                if($(cible).find("div[id^='champ_bbcode_']").length && !Utils.comptePlus)
+                    this.plus($(cible).find("div[id^='champ_bbcode_']").attr("id").match(/\d+$/));
             }
             // Si on affiche plus de message
-            else if($(e.target).attr("id") && $(e.target).attr("id").includes("message_")){
+            else if($(cible).attr("id") && $(cible).attr("id").includes("message_")){
                 // Si on affiche plus de message d'un rapport de chasse
-                if($(e.target).closest(".contenu_conversation").prev().prev().find(".td_objet").text().includes("chasseuses ont conquis")){
-                    let conv = $(e.target).parents().eq(3).prevAll().eq(1).attr("id").split("_")[1];
-                    this.analyseChasse(conv, $(e.target).find(".message").parent().attr("id"), $(e.target).find(".message").text()).analyseChasses(conv);
+                if($(cible).closest(".contenu_conversation").prev().prev().find(".td_objet").text().includes("chasseuses ont conquis")){
+                    let conv = $(cible).parents().eq(3).prevAll().eq(1).attr("id").split("_")[1];
+                    this.analyseChasse(conv, $(cible).find(".message").parent().attr("id"), $(cible).find(".message").text()).analyseChasses(conv);
                 }
             }
-            if($(e.target).attr("id") && $(e.target).attr("id").includes("liste_conversations"))
+            if($(cible).attr("id") && $(cible).attr("id").includes("liste_conversations"))
                 this.couleurMessage();
         });
     }
@@ -151,9 +151,16 @@ class PageMessagerie
         let id_mess = id.split("_")[1], combat = new Combat({id : id_mess, dateHeure : dateHeure, RC : message});
         let simulation = message.includes("Vos troupes ont échoué") ? ` <span id="o_simuler_${id_mess}">Simuler</span>` : "";
         // preparation de l'analyse
-        combat.analyse();
+        let analyse = false;
+        try{
+            analyse = combat.analyse();
+        }catch(e){
+            console.warn("Outiiil : rapport de combat non analysable", e);
+        }
+        // niveaux d'armes et de bouclier affichés directement sous le rapport
+        let ligneBonus = analyse ? combat.toLigneBonus() : "";
         // affichage des optiosn
-        $("#" + id + " td:eq(1)").append(`<p class="o_optionMessage gras cursor"><span id="show_info_${id_mess}">+</span>${simulation}</p><div id="o_analyse_${id_mess}" class="info_supp separateur_messages_meme_expe" style="display:none">${combat.toHTMLMessagerie()}</div>`);
+        $("#" + id + " td:eq(1)").append(`${ligneBonus}<p class="o_optionMessage gras cursor"><span id="show_info_${id_mess}">+</span>${simulation}</p><div id="o_analyse_${id_mess}" class="info_supp separateur_messages_meme_expe" style="display:none">${combat.toHTMLMessagerie()}</div>`);
         $("#show_info_" + id_mess).click((e) => {$(e.currentTarget).text($(e.currentTarget).text() == "+" ? "-" : "+").parent().next().toggle("blind", 400);});
         $("#o_simuler_" + id_mess).click((e) => {
             // ouverture de la boite combat sur l'onglet de simulation

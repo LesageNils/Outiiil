@@ -425,6 +425,23 @@ class Combat
 		return res;
 	}
     /**
+    * Résume en une ligne les niveaux d'armes et de bouclier déduits du rapport, pour l'ennemi et pour soi.
+    *
+    * @method toLigneBonus
+    * @return {String} html
+    */
+    toLigneBonus()
+    {
+        let decrire = (joueur, bonusLieu) => {
+            let bouclier = bonusLieu.length ? `Bouclier (/ ${LIBELLE_LIEU[this._lieu]}) ${bonusLieu.join(" - ")}` : (joueur.niveauRecherche[1] != -1 ? `Bouclier ${joueur.niveauRecherche[1]}` : "Bouclier ?");
+            return `Armes ${joueur.niveauRecherche[2]} | ${bouclier}`;
+        };
+        // en défense on est le défenseur, en attaque l'attaquant
+        let ennemi = this._pointDeVue == 1 ? decrire(this._attaquant, this._attaquantBonusLieu) : decrire(this._defenseur, this._defenseurBonusLieu);
+        let vous = this._pointDeVue == 1 ? decrire(this._defenseur, this._defenseurBonusLieu) : decrire(this._attaquant, this._attaquantBonusLieu);
+        return `<p class="o_ligneBonus small"><span class="gras">Ennemi :</span> ${ennemi} &nbsp;—&nbsp; <span class="gras">Vous :</span> ${vous}</p>`;
+    }
+    /**
     *
     */
     toHTMLMessagerie()

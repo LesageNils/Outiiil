@@ -81,6 +81,23 @@ class Utils
         return location.hostname.split(".")[0].toUpperCase();
     }
     /**
+    * Appelle callback pour chaque élément inséré dans la zone désignée par selecteur.
+    * Remplace l'événement DOMNodeInserted, que les navigateurs ne déclenchent plus.
+    *
+    * @static
+    * @method surInsertion
+    * @param {String} selecteur
+    * @param {Function} callback reçoit l'élément inséré
+    */
+    static surInsertion(selecteur, callback)
+    {
+        let zone = document.querySelector(selecteur);
+        if(zone)
+            new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {mutation.addedNodes.forEach((noeud) => {if(noeud.nodeType == Node.ELEMENT_NODE) callback(noeud);});});
+            }).observe(zone, {childList : true, subtree : true});
+    }
+    /**
     * Renvoie l'indice d'une unité dans NOM_UNITE à partir de son nom tel qu'écrit par le jeu.
     * La comparaison ignore la casse, les accents, le type d'apostrophe et le pluriel ("Tanks d’Élites" = "Tank d’élite").
     *

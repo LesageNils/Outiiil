@@ -64,8 +64,8 @@ class PageChat
             texte.length && $("#message").val(`[i]${texte}[/i] // `).focus();
         });
         // ajotu du cite pour les nouveaux messages
-		$("#nouveauxMessages").on("DOMNodeInserted", (e) => {
-            let element = $(e.target);
+		Utils.surInsertion("#nouveauxMessages", (cible) => {
+            let element = $(cible);
 			if(element.is("p") && !element.hasClass("o_parsed")){
 				$(element).addClass("o_parsed");
 				element.html((i, html) => {
@@ -82,7 +82,7 @@ class PageChat
 			}
 		});
         // ajout de l'event lorsqu'on actualise et que les nouveaux messages passent en anciens messages
-        $("#anciensMessages").on("DOMNodeInserted", (e) => {
+        Utils.surInsertion("#anciensMessages", () => {
             $("span[id^='o_cite']").off().click((e) => {
                 let texte = this.citerMessage(e);
                 texte.length && $("#message").val(`[i]${texte}[/i] // `).focus();
